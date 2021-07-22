@@ -23,6 +23,39 @@
 			user-select: none;
 		}
 
+		.content {
+			height: 400px;
+		}
+
+		html,
+		body {
+			max-width: 100%;
+			overflow-x: hidden;
+		}
+
+		.content .overlay {
+			background-image: url('picture/background-image.png');
+			height: 400px;
+			-webkit-filter: blur(3px);
+			-moz-filter: blur(3px);
+			-o-filter: blur(3px);
+			-ms-filter: blur(3px);
+			filter: blur(3px);
+			z-index: -1;
+			background-position: center;
+			background-repeat: repeat;
+			background-size: cover;
+			transform: scale(1.1);
+		}
+
+		.opacity {
+			background-color: rgba(5, 99, 127, 0);
+			overflow: hidden;
+			width: 95%;
+			transform: translate(5%, -90%);
+			z-index: 10 !important;
+		}
+
 		@media (min-width: 768px) {
 			.bd-placeholder-img-lg {
 				font-size: 3.5rem;
@@ -35,96 +68,61 @@
 
 
 <body>
-
-	<header>
-		<div class="collapse bg-dark" style="background-color: #656b6b;" id="navbarHeader">
-			<div class="container">
-				<div class="row">
-					<div class="col-sm-4 offset-md-1 py-4">
-						<h4 class="text-white">Contact</h4>
-						<ul class="list-unstyled">
-							<li><a href="#" class="text-white">Follow on Twitter</a></li>
-							<li><a href="#" class="text-white">Follow on Github</a></li>
-							<li><a href="#" class="text-white">Email me</a></li>
-						</ul>
+	<main>
+		<div class="content ">
+			<div class="overlay"></div>
+			<section class="py-5 text-center opacity">
+				<div class="row py-lg-5">
+					<div class="col-lg-6 col-md-8 mx-auto badge text-wrap">
+						<h1 class="fw-dark">Viewing life through Ray</h1>
+						<p class="h2 lead text-dark" style="
+							background-color: white;
+							color: black !important;
+						">Personal blog about computer graphics, physics based simulation and art.
+													This is the front page choose below what you want to explore.
+												</p>
 					</div>
 				</div>
-			</div>
+				<br>
+				<br>
+				<br>
+				<br>
+			</section>
 		</div>
-		<div class="navbar navbar-dark bg-dark shadow-sm">
-			<div class="container">
-				<a href="#" class="navbar-brand d-flex align-items-center">
-					<strong>Home</strong>
-				</a>
-				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader"
-					aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
-					<span class="navbar-toggler-icon"></span>
-				</button>
-			</div>
-		</div>
-	</header>
-	<main>
-		<section class="py-5 text-center container">
-			<div class="row py-lg-5">
-				<div class="col-lg-6 col-md-8 mx-auto">
-					<h1 class="fw-light">Album example</h1>
-					<p class="lead text-muted">Something short and leading about the collection below—its contents, the
-						creator, etc. Make it short and sweet, but not too short so folks don’t simply skip over it
-						entirely.</p>
-					<p>
-						<a href="#" class="btn btn-primary my-2">Main call to action</a>
-						<a href="#" class="btn btn-secondary my-2">Secondary action</a>
-					</p>
-				</div>
-			</div>
-		</section>
 		<div class="b-example-divider"></div>
 
 		<div class="container px-4 py-5" id="hanging-icons">
-			<h2 class="pb-2 border-bottom">Hanging icons</h2>
+			<h2 class="pb-2 border-bottom">Main topic</h2>
 			<div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
 				<div class="col d-flex align-items-start">
-					<div class="icon-square bg-light text-dark flex-shrink-0 me-3">
-						<svg class="bi" width="1em" height="1em">
-							<use xlink:href="#toggles2" />
-						</svg>
-					</div>
 					<div>
-						<h2>Featured title</h2>
-						<p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another
-							sentence and probably just keep going until we run out of words.</p>
+						<h2>Rendering</h2>
+						<p>You will find many resources about rendering, like tutorial, dev blog and some other thing.
+							About rendering I mostly focus about raytracing or the derivative of the subject like
+							denoising and more.</p>
+						<br>
 						<a href="#" class="btn btn-primary">
-							Primary button
+							See articles
 						</a>
 					</div>
 				</div>
 				<div class="col d-flex align-items-start">
-					<div class="icon-square bg-light text-dark flex-shrink-0 me-3">
-						<svg class="bi" width="1em" height="1em">
-							<use xlink:href="#cpu-fill" />
-						</svg>
-					</div>
 					<div>
-						<h2>Featured title</h2>
-						<p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another
-							sentence and probably just keep going until we run out of words.</p>
+						<h2>Simulation</h2>
+						<p>Tutorials and dev blog about implementing simulation paper, will many can seem daunting at first you will find many explanation about a wide range of topics from smoke to snow simulation passing thought forest generation.</p>
 						<a href="#" class="btn btn-primary">
-							Primary button
+							See articles
 						</a>
 					</div>
 				</div>
 				<div class="col d-flex align-items-start">
-					<div class="icon-square bg-light text-dark flex-shrink-0 me-3">
-						<svg class="bi" width="1em" height="1em">
-							<use xlink:href="#tools" />
-						</svg>
-					</div>
 					<div>
-						<h2>Featured title</h2>
-						<p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another
-							sentence and probably just keep going until we run out of words.</p>
+						<h2>Art</h2>
+						<p>Everything here is related to art making with computer languages, 4k demomaking, creating realtime shader from picture and many more.  </p>
+						<br>
+						<br>
 						<a href="#" class="btn btn-primary">
-							Primary button
+							See articles
 						</a>
 					</div>
 				</div>
@@ -132,7 +130,7 @@
 		</div>
 
 		<div class="b-example-divider"></div>
-		<div class="album py-5 bg-light">
+		<!-- <div class="album py-5 bg-light">
 			<div class="container">
 
 				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
@@ -161,7 +159,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</div> -->
 	</main>
 
 
@@ -171,9 +169,7 @@
 			<p class="float-end mb-1">
 				<a href="#">Back to top</a>
 			</p>
-			<p class="mb-1">Album example is &copy; Bootstrap, but please download and customize it for yourself!</p>
-			<p class="mb-0">New to Bootstrap? <a href="/">Visit the homepage</a> or read our <a
-					href="../getting-started/introduction/">getting started guide</a>.</p>
+			<p class="mb-1">&copy; Cewein 2021</p>
 		</div>
 	</footer>
 </body>
