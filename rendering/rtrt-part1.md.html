@@ -3,7 +3,25 @@
 
 
 # Overview
-a
+
+Ray-tracing is rapidly taking a huge place in the real-time graphics world, while more interactive it need other thing not presents in a simple
+offline raytracer like the one present in Raytracing in one weekend by Peter Shirley [#RTW1].
+Raytracing in one weekend provide an easy and good introduction to the world of ray-tracing, if you never done any raytracing in your life I highly recommend that you take a look at it.
+It even has two other free books on how to make a advance offline raytracer, you can find the whole series at this address [_Ray Tracing Series_](https://raytracing.github.io/)
+
+But one of the downside of this project is the slowness of the rendering part and the lack of interaction with between rendering engine and the user. 
+this is why after reading and doing Shirley's book, I decided to take a look rasterisation, the other way to do graphics real-time graphics. 
+
+Saying mainstream is actual false since many people use with API that implement already all the calls needed to create a proper raster environnement.
+The nice things about using APIs is that they abstract the communication between the GPU and CPU, 
+in our case this is the thing we need since GPU really great do a lot of independent calculation. 
+
+One of the main API, and maybe the most famous is OpenGL made by Khronos group and will be sufficient for the way we are going to use it. We are not going to do some proper rasterisation with it,
+so if again you never touch OpenGL before i highly recommend to check out [LearnOpenGL.com](https://learnopengl.com) a website by Joey De Vriez as it provide is a full run trough rasterisation with openGL. On this website you will find a very good introduction to classical OpenGL
+and some libraries we are going to use here.
+
+while this being stated we ca, now start to build the fundament of our rendering engine.
+
 # Compilation and libraries
 a
 ## CMake
@@ -16,16 +34,18 @@ a
 ## vertex, fragment and compute
 ## Loading data
 # Quad rendering
-## Camera
-### mouse controle
-### keyboard controle
 ## no vertex
+## Camera
+### mouse controls
+### keyboard controls
 # Custom GUI and FPS counter
 ## dear ImGUI
 ## FPS counter
 # Conclusion
 # acknowledgement
 # reference
+
+[#RTW1]: Peter Shirley, Ray Tracing in one weekend, 2020, https://raytracing.github.io/books/RayTracingInOneWeekend.html
 
 
 
