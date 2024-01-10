@@ -18,7 +18,7 @@ function generate() {
     // The "data" parameter represents the resolved value (loaded JSON data) of the promise
     loadData().then((data) => {
         jsonData = data;
-        jsonData.data.array.forEach(r => {
+        jsonData.data.forEach(r => {
 
             console.log(r);
 
