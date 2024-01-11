@@ -27,8 +27,11 @@ function generate() {
             `        <div class="h-100 p-5 text-bg-dark">`+
             `            <h2>${j.title}</h2>`+
             `            <p>${j.abstract}</p>`+
-            `            <button class="btn btn-outline-light" type="button">Example button</button>`+
-            `        </div>`+
+            `            <button class="btn btn-outline-light" type="button">Example button</button>`;
+
+            if(j.isPaper) htmldata += 
+            `<button type="button" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-text"> Paper</i></button>`;
+            htmldata += `        </div>`+
             `    </div>`+
             `</div>`;
             var e = document.createElement(`div`);
