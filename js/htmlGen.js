@@ -24,9 +24,9 @@ function generate() {
             var htmldata =
                 `<div class="p-1 row align-items-md-stretch" id="article">` +
                 `    <div class="col-md">` +
-                `        <div class="h-100 p-5 text-bg-dark justify-content-center">` +
-                `            <h2 class="align-middle">${j.title}</h2>` +
-                `            <p class="align-middle">${j.abstract}</p>` +
+                `        <div class="h-100 p-5 text-bg-dark">` +
+                `            <h2 class="text-center">${j.title}</h2>` +
+                `            <p class="text-center">${j.abstract}</p>` +
                 `         <div class="d-flex justify-content-center gap-2 mb-3">`
 
             if (j.isPaper) htmldata +=
