@@ -2,43 +2,40 @@
     "data":
     [
         {
-            "title":"Exemple 1",
-            "date":"01/2024",
-            "type":"ACM Siggraph 2026",
-            "people":"John Doe, Sam Itraille",
-            "image":"",
-            "abstract":"Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Maecenas sollicitudin. Nulla accumsan, elit sit amet varius semper, nulla mauris mollis quam, tempor suscipit diam nulla vel leo. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Aenean vel massa quis mauris vehicula lacinia. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Pellentesque pretium lectus id turpis. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Integer malesuada. Donec quis nibh at felis congue commodo. ",
-            "isPaper":true,
+            "title":"A concept for starmap",
+            "date":"2023-12-19",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"starmap.png",
+            "abstract":"A 2D star map shader, made for easier and fast rendering than a fully physically based one.",
+            "isPaper":false,
+            "paperLink":"",
             "gotCode":true,
+            "codeLink":"",
             "gotDemo":true,
-            "gotWebpage":true,
-            "gotDataset":true
-        },
-        {
-            "title":"Exemple 2",
-            "date":"02/2024",
-            "type":"Graphical demo",
-            "people":"John Doe, Sam Itraille",
-            "image":"",
-            "abstract":"In sem justo, commodo ut, suscipit at, pharetra vitae, orci. Praesent id justo in neque elementum ultrices. Duis bibendum, lectus ut viverra rhoncus, dolor nunc faucibus libero, eget facilisis enim ipsum id lacus. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nullam faucibus mi quis velit. Aenean vel massa quis mauris vehicula lacinia. Nullam sit amet magna in magna gravida vehicula. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Pellentesque sapien. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.\n Etiam dictum tincidunt diam. Maecenas aliquet accumsan leo. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean fermentum risus id tortor. In enim a arcu imperdiet malesuada. Aliquam erat volutpat. Integer pellentesque quam vel velit. Quisque tincidunt scelerisque libero. Sed elit dui, pellentesque a, faucibus vel, interdum nec, diam. Proin mattis lacinia justo.",
-            "isPaper":true,
-            "gotCode":false,
-            "gotDemo":true,
+            "demoLink":"https://www.shadertoy.com/view/4csGWr",
             "gotWebpage":false,
-            "gotDataset":true
+            "pageLink":"",
+            "gotDataset":false,
+            "dataLink":""
         },
         {
-            "title":"Exemple 3",
-            "date":"03/2024",
-            "type":"Graphical demo",
-            "people":"John Doe, Sam Itraille",
-            "image":"",
-            "abstract":"Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Praesent vitae arcu tempor neque lacinia pretium. Phasellus faucibus molestie nisl. Curabitur bibendum justo non orci. Nulla est. Praesent in mauris eu tortor porttitor accumsan. Nulla est. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Nullam dapibus fermentum ipsum. Fusce suscipit libero eget elit. Nulla non arcu lacinia neque faucibus fringilla. ",
-            "isPaper":true,
+            "title":"An occult kraken pit",
+            "date":"2023-09-14",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"blackhole-octo.png",
+            "abstract":"A showcase a the Poor's man blackhole rendering technics, technics involve ray bending in ray marching.",
+            "isPaper":false,
+            "paperLink":"",
             "gotCode":true,
+            "codeLink":"",
             "gotDemo":true,
-            "gotWebpage":true,
-            "gotDataset":true
+            "demoLink":"https://www.shadertoy.com/view/DlSfWm",
+            "gotWebpage":false,
+            "pageLink":"",
+            "gotDataset":false,
+            "dataLink":""
         }
     ]
 }
