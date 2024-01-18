@@ -21,70 +21,37 @@
     }
 
     .zoom:hover {
-      -ms-transform: scale(1.02);
+      -ms-transform: scale(1.05);
       /* IE 9 */
-      -webkit-transform: scale(1.02);
+      -webkit-transform: scale(1.05);
       /* Safari 3-8 */
-      transform: scale(1.02);
+      transform: scale(1.05);
+      /* Add the blur effect */
+      -webkit-filter: grayscale(80%);
+      /* Safari 6.0 - 9.0 */
+      filter: grayscale(80%);
+    }
+
+    .frame {
+      background-image: -webkit-linear-gradient(left,
+          rgb(255, 255, 255) 0%,
+          rgba(255, 255, 255, 0.945) 45%,
+          rgba(0, 0, 0, 0) 100%),
+        url(picture/background-image.png);
+      -webkit-mask-image: -webkit-linear-gradient(left, from(rgba(0, 0, 0, 0)), to(rgba(0, 0, 0, 1)));
+      mask-image: linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1));
     }
   </style>
 
 </head>
 
 <body onload="generate()">
-  <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-    <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button"
-      aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
-      <svg class="bi my-1 theme-icon-active" width="1em" height="1em">
-        <use href="#circle-half"></use>
-      </svg>
-      <span class="visually-hidden" id="bd-theme-text">Toggle theme</span>
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
-      <li>
-        <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light"
-          aria-pressed="false">
-          <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-            <use href="#sun-fill"></use>
-          </svg>
-          Light
-          <svg class="bi ms-auto d-none" width="1em" height="1em">
-            <use href="#check2"></use>
-          </svg>
-        </button>
-      </li>
-      <li>
-        <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark"
-          aria-pressed="false">
-          <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-            <use href="#moon-stars-fill"></use>
-          </svg>
-          Dark
-          <svg class="bi ms-auto d-none" width="1em" height="1em">
-            <use href="#check2"></use>
-          </svg>
-        </button>
-      </li>
-      <li>
-        <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto"
-          aria-pressed="true">
-          <svg class="bi me-2 opacity-50 theme-icon" width="1em" height="1em">
-            <use href="#circle-half"></use>
-          </svg>
-          Auto
-          <svg class="bi ms-auto d-none" width="1em" height="1em">
-            <use href="#check2"></use>
-          </svg>
-        </button>
-      </li>
-    </ul>
-  </div>
-  <main>
-    <div class="container">
+  <main class="bg-secondary">
+    <div class="container bg-white">
       <div class="p-2 bg-body-primary">
 
         <!-- MAIN PICTURE -->
-        <div class="p-5 mb-4 bg-body-tertiary rounded-1">
+        <div class="p-5 mb-4rounded-1 frame">
           <div class="container-fluid py-5">
             <h1 class="display-5 fw-bold">Paper and Demo</h1>
             <p class="col-md-8 fs-4">This web page is under construction but will reference project, demo and paper that
