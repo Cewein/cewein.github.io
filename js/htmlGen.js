@@ -24,7 +24,7 @@ function generate() {
             var htmldata =
                 `<div class="p-1 row align-items-md-stretch" id="article">` +
                 `    <div class="col-md" >` +
-                `        <div class="h-100 p-5 text-bg-dark" style="background-image: url('picture/${j.image}'); background-position: center;">` +
+                `        <div class="h-100 p-5 text-bg-dark zoom" style="background-image: url('picture/${j.image}'); background-position: center;">` +
                 `            <h2 class="text-center">${j.title}</h2>` +
                 `            <p class="text-center">${j.abstract}</p>` +
                 `         <div class="d-flex justify-content-center gap-2 mb-3">`
