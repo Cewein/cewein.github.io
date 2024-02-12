@@ -44,6 +44,15 @@
       -webkit-mask-image: -webkit-linear-gradient(left, from(rgba(0, 0, 0, 0)), to(rgba(0, 0, 0, 1)));
       mask-image: linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1));
     }
+
+    .h-static {
+      height: 300px !important;
+    }
+
+    .link-box figcaption.hover-white::before {
+      background: linear-gradient(0deg,rgba(255, 255, 255, 0.95) 0,rgba(255, 255, 255,.95) 90%,rgba(240,185,58,0) 100%)
+    }
+
   </style>
 
 </head>
@@ -62,35 +71,35 @@
           </div>
         </div>
 
-        <div>
-
-        </div >
-          <figure class="col-md-6 col-lg-4 link-box position-relative " style="opacity: 1;">
-            <div class="w-100 h-100 position-absolute all-corners">
-                <!--  -->
-                <img data-lazy-type="image" data-lazy-src="https://cdn.disneyanimation.com/uploads/resources/moana-island-scene/island-readme-v1-1-1.jpg" src="https://cdn.disneyanimation.com/uploads/resources/moana-island-scene/island-readme-v1-1-1.jpg" alt="Moana Island Scene" class="w-100 h-100 fit-cover lazy-loaded" style="object-position: center center;" loading="lazy">
+        
+      <div class="p-1 row align-items-md-stretch">
+        <figure class="w-100 col-lg-4 link-box h-static position-relative " style="opacity: 1;">
+          <div class="position-absolute all-corners">
+            <!--  -->
+            <img data-lazy-type="image" data-lazy-src="https://cdn.disneyanimation.com/uploads/resources/moana-island-scene/island-readme-v1-1-1.jpg" src="https://cdn.disneyanimation.com/uploads/resources/moana-island-scene/island-readme-v1-1-1.jpg" alt="Moana Island Scene" class="w-100 h-100 fit-cover lazy-loaded" style="object-position: center center;" loading="lazy">
+          </div>
+          <figcaption class="position-absolute p-4 text-white d-flex flex-column w-100 h-100 align-items-start top-left hover-white">
+            <div class="overlay hover-white position-absolute all-corners w-100 h-100">
             </div>
-            <figcaption class="position-absolute p-4 text-white d-flex flex-column w-100 h-100 align-items-start top-left hover-purple">
-                <div class="overlay hover-purple position-absolute all-corners w-100 h-100">
-                </div>
-                <div class="text-contain position-relative">
-                    <div class="text-move">
-                        <h3>
-                            
-                            <span class="top">Moana Island Scene</span>
-                            <div class="subhead link-describe">
-                                <span>Data Set</span>
-                            </div>
-                        </h3>
-                        <div class="header-line bg-purple"></div>
-                        <p>Everything necessary to render a version of the Motunui island</p>
-                    </div>
-                </div>
-                <a href="/resources/moana-island-scene/" class="link-overlay position-absolute w-100 h-100" data-toggle="drawer">Moana Island Scene</a>
-            </figcaption>
-          </figure>
-        </div>
-
+            <div class="text-contain position-relative">
+              <div class="text-move">
+                <h3>
+                  
+                  <span class="top">Moana Island Scene</span>
+                  <div class="subhead link-describe">
+                    <span>Data Set</span>
+                  </div>
+                </h3>
+                <div class="header-line bg-purple"></div>
+                <p>Everything necessary to render a version of the Motunui island</p>
+              </div>
+            </div>
+            <a href="/resources/moana-island-scene/" class="link-overlay position-absolute w-100 h-100" data-toggle="drawer">Moana Island Scene</a>
+          </figcaption>
+        </figure>
+      </div>
+        
+      <div>
         <!-- TODO SELECTOR -->
         <hr />
 
