@@ -68,6 +68,13 @@
       transition: all .6s
     }
 
+    .link-box:focus-within displayer,.link-box:hover displayer {
+    height: auto;
+    opacity: 1;
+    visibility: visible;
+    color: #272727
+    }
+
   </style>
 
 </head>
@@ -99,14 +106,24 @@
             <div class="text-contain position-relative">
               <div class="text-move">
                 <h3>
-                  
                   <span class="top">Moana Island Scene</span>
                   <div class="subhead link-describe">
                     <span>Data Set</span>
                   </div>
                 </h3>
-                <div class="header-line bg-purple"></div>
-                <p>Everything necessary to render a version of the Motunui island</p>
+                <displayer>
+                  <div class="row">
+                    <div class="col">
+                      <p>Column</p>
+                    </div>
+                    <div class="col">
+                      <p>Column</p>
+                    </div>
+                    <div class="col">
+                      <p>Column</p>
+                    </div>
+                  </div>
+                </displayer>
               </div>
             </div>
             <a href="/resources/moana-island-scene/" class="link-overlay position-absolute w-100 h-100" data-toggle="drawer">Moana Island Scene</a>
