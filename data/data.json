@@ -2,6 +2,24 @@
     "data":
     [
         {
+            "title":"A lambert material",
+            "date":"2023-04-21",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"lambert.png",
+            "abstract":"BSDF viewer tamplate, starting with a lambert martial.",
+            "isPaper":false,
+            "paperLink":"",
+            "gotCode":true,
+            "codeLink":"",
+            "gotDemo":true,
+            "demoLink":"https://www.shadertoy.com/view/MXXXz2",
+            "gotWebpage":false,
+            "pageLink":"",
+            "gotDataset":false,
+            "dataLink":""
+        },
+        {
             "title":"A concept for starmap",
             "date":"2023-12-19",
             "type":"Shadertoy demo",
