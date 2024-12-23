@@ -1,0 +1,44 @@
+<p><strong>Adaptive Material-Aware Hemispherical Harmonics Interpolation
+for Inverse Rendering</strong></p>
+<h1 id="abstract">Abstract</h1>
+<p>We present a novel theorical approach for efficient representation
+and interpolation of complex materials in inverse physically based
+rendering using adaptive hemispherical harmonics. The method
+automatically adjusts the HSH basis order based on local material
+properties and spatial variation, significantly reducing the
+computational overhead while maintaining high accuracy. We introduce an
+adaptation criteria based on the BRDF property and hybrid Hemispherical
+Harmonics with wavelets. We then use this adapation criteria to create
+Material aware ligth-tracing.</p>
+<h1 id="introduction">Introduction</h1>
+<p>Inverse rendering aims to recover material properties, lighting
+conditions and geometry to match a desiered output, but faces
+significant challenges when dealing with complex, spatially-varying
+materials. Traditional approaches that use basis function often use
+fixed-order basis functions to represent hemispherical quantities,
+leading to either excessive computational cost or loss of high-frequency
+details. While hemispherical harmonics provide an efficient basis for
+representing hemispherical functions.</p>
+<h1 id="material-aware-adaptive-basis">Material-Aware Adaptive
+Basis</h1>
+<p>Our key insight is that the required HSH order varies significantly
+based on both material properties and spatial location. The adaptation
+of the basis order is particularly crucial for materials with varying
+specular responses and complex layering effects. We introduce an
+adaptive framework that automatically determines the appropriate local
+basis order through a comprehensive analysis of material properties and
+local geometry.</p>
+<h2 id="adaptation-criteria-components">Adaptation Criteria
+Components</h2>
+<p>The adaptation framework analyzes four key components:</p>
+<h3 id="material-roughness-and-specular-characteristics-rx">Material
+Roughness and Specular Characteristics <span
+class="math inline"><em>R</em>(<em>x</em>)</span></h3>
+<ul>
+<li>Microsurface roughness (<span
+class="math inline"><em>α</em></span>)</li>
+<li>Specular lobe shape (<span
+class="math inline"><em>η</em></span>)</li>
+<li>Fresnel response (<span
+class="math inline"><em>F</em><sub>0</sub></span>)</li>
+</ul>
