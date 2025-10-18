@@ -20,6 +20,24 @@
             "dataLink":""
         },
         {
+            "title":"The business district",
+            "date":"2025-04-24",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"city.png",
+            "abstract":"Living the high life in the high rises.",
+            "isPaper":false,
+            "paperLink":"",
+            "gotCode":false,
+            "codeLink":"",
+            "gotDemo":true,
+            "demoLink":"https://www.shadertoy.com/view/X3GBWD",
+            "gotWebpage":false,
+            "pageLink":"",
+            "gotDataset":false,
+            "dataLink":""
+        },
+        {
             "title":"A topology trick",
             "date":"2024-12-6",
             "type":"Shadertoy demo",
