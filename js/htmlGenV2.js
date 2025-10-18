@@ -1,7 +1,7 @@
 // Define an asynchronous function named "loadData" to fetch JSON data from a URL
 async function loadData() {
     // Use the "await" keyword to wait for the fetch to complete and get the response
-    const response = await fetch("https://raw.githubusercontent.com/Cewein/cewein.github.io/main/data/data.json");
+    const response = await fetch("https://raw.githubusercontent.com/Cewein/cewein.github.io/refs/heads/main/data/data.json");
 
     // Use the "await" keyword again to parse the response as JSON and get the result
     const loadedJSON = await response.json();
