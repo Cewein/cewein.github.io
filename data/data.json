@@ -2,6 +2,24 @@
     "data":
     [
         {
+            "title":"A Iridescent Material",
+            "date":"2025-10-18",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"iridescence.png",
+            "abstract":"Shinny iridescent material shader made with a fresnel effect and a hue shift based on the viewing angle.",
+            "isPaper":false,
+            "paperLink":"",
+            "gotCode":false,
+            "codeLink":"",
+            "gotDemo":true,
+            "demoLink":"https://www.shadertoy.com/view/wX2yRm",
+            "gotWebpage":false,
+            "pageLink":"",
+            "gotDataset":false,
+            "dataLink":""
+        },
+        {
             "title":"A topology trick",
             "date":"2024-12-6",
             "type":"Shadertoy demo",
