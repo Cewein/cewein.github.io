@@ -1,5 +1,5 @@
 <meta charset="utf-8" emacsmode="-*- markdown -*-">
-Adaptive Mesh-Guided Pruning for Mesh-in-the-Loop Gaussian Splatting
+**Adaptive Mesh-Guided Pruning for Mesh-in-the-Loop Gaussian Splatting**
 
 We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussian Splatting that introduces geometric awareness into the pruning of 3D Gaussian primitives. While MILo effectively combines photometric optimization with mesh supervision, its pruning relies mainly on appearance cues, often retaining redundant off-surface Gaussians "floaters" that increase memory use and distort reconstructed surfaces. AMGP addresses this issue by incorporating each Gaussian's signed distance to the reconstructed mesh into a unified importance score, blending photometric contribution, opacity, and geometric proximity. This mesh-aware strategy preserves Gaussians near the surface, resulting in compact, surface-aligned models that maintain fidelity and improve geometric coherence.
 
