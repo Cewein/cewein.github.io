@@ -2,7 +2,7 @@
 
 <meta charset="utf-8" emacsmode="-*- markdown -*-">
 <title>Adaptive Mesh-Guided Pruning</title>
-<link rel="stylesheet" href="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/report.css">
+<link rel="stylesheet" href="script/report.css">
 <script src="script/data.js"></script>
 <script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/ImageBox.js"></script>
 <script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/CopyrightBox.js"></script>
@@ -144,9 +144,9 @@ def culling_with_mesh_aware_pruning(self, scene, render_simp, iteration, args, p
 
 # Comparison to MILo's Dense Pruning
 
-MILo's original pruning relies solely on photometric importance, which can preserve redundant floaters and lead to irregular surfaces. In contrast, AMGP integrates geometric proximity and opacity, yielding more compact and surface-aligned Gaussian sets. This improves reconstruction accuracy and efficiency, reducing Gaussian counts by 30–50% while maintaining or improving PSNR and lowering Chamfer distances.
-
-# Empirical Evaluation
+MILo's original pruning relies solely on photometric importance, which can preserve redundant floaters and lead to irregular surfaces.
+In contrast, AMGP integrates geometric proximity and opacity, yielding more compact and surface-aligned Gaussian sets.
+This improves reconstruction accuracy and efficiency, reducing Gaussian counts by around 50% while maintaining PSNR.
 
 <div class="content" id="content"></div>
 
