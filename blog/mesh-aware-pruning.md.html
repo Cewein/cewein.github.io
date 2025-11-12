@@ -1,4 +1,25 @@
+
+
 <meta charset="utf-8" emacsmode="-*- markdown -*-">
+<title>Adaptive Mesh-Guided Pruning</title>
+<link rel="stylesheet" href="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/report.css">
+<script src="script/data.js"></script>
+<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/ImageBox.js"></script>
+<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/CopyrightBox.js"></script>
+<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/Chart.js"></script>
+<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/ChartBox.js"></script>
+<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/TableBox.js"></script>
+
+<script type="text/javascript">
+
+    function setup() {
+        content = document.getElementById("content");
+        
+        if (data['imageBoxes'])
+            imageBoxUI = new ImageBox(content, data['imageBoxes'], "Mesh Aware Pruning" );
+    }
+</script>
+
 **Adaptive Mesh-Guided Pruning for Mesh-in-the-Loop Gaussian Splatting**
 
 We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussian Splatting that introduces geometric awareness into the pruning of 3D Gaussian primitives. While MILo effectively combines photometric optimization with mesh supervision, its pruning relies mainly on appearance cues, often retaining redundant off-surface Gaussians "floaters" that increase memory use and distort reconstructed surfaces. AMGP addresses this issue by incorporating each Gaussian's signed distance to the reconstructed mesh into a unified importance score, blending photometric contribution, opacity, and geometric proximity. This mesh-aware strategy preserves Gaussians near the surface, resulting in compact, surface-aligned models that maintain fidelity and improve geometric coherence.
@@ -125,22 +146,27 @@ def culling_with_mesh_aware_pruning(self, scene, render_simp, iteration, args, p
 
 MILo's original pruning relies solely on photometric importance, which can preserve redundant floaters and lead to irregular surfaces. In contrast, AMGP integrates geometric proximity and opacity, yielding more compact and surface-aligned Gaussian sets. This improves reconstruction accuracy and efficiency, reducing Gaussian counts by 30–50% while maintaining or improving PSNR and lowering Chamfer distances.
 
-# Empirical Evaluation (Placeholder)
+# Empirical Evaluation
 
-| Method          | # Gaussians | PSNR (dB) ↑ |
-| --------------- | ----------- | ----------- |
-| MILo (Original) | [TBD]       | [TBD]       |
-| AMGP (Ours)     | [TBD]       | [TBD]       |
+<div class="content" id="content"></div>
 
-Planned evaluations on benchmarks such as Tanks & Temples and Replica will quantify AMGP's gains in both visual fidelity and geometric precision.
+| Method          | # Gaussians |
+| --------------- | ----------- |
+| MILo (Original) | 4 113 643   |
+| AMGP (Ours)     | 1 755 688   |
 
 # References
 
 [1] B. Kerbl et al. 3D Gaussian Splatting for Real-Time Radiance Field Rendering. ACM TOG (SIGGRAPH), 42(4):1-14, 2023.
+
 [2] A. Guédon et al. MILo: Mesh-in-the-Loop Gaussian Splatting for Detailed and Efficient Surface Reconstruction. arXiv:2406.24096, 2024.
+
 [3] M. Hanson et al. PUP 3D-GS: Principled Uncertainty Pruning for 3D Gaussian Splatting. CVPR, 2025.
+
 [4] M. Tatarchenko et al. Efficient Compression of 3D Gaussian Splats through Pruning. BMVC, 2024.
+
 [5] Z. Duan et al. LP-3DGS: Learning to Prune 3D Gaussian Splatting. arXiv:2405.18784, 2024.
+
 [6] J. Ye et al. 3D Gaussian Primitive Pruning While Avoiding Catastrophic Scene Destruction. arXiv:2405.17793, 2024.
 
 <!-- Markdeep: -->
@@ -151,4 +177,4 @@ Planned evaluations on benchmarks such as Tanks & Temples and Replica will quant
 
 <script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js?" charset="utf-8"></script>
 
-<script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
+<script>window.markdeepOptions = {onLoad: setup};window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
