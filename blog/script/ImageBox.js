@@ -27,7 +27,7 @@
 
 var imageBoxSettings = {
     zoom: 0.1,
-    width: 1920/2,
+    width: "100%",
     height: 1080/2
 };
 
@@ -231,7 +231,7 @@ var ImageBox = function(parent, config, title) {
 
     this.tree = [];
     this.selection = [];
-    this.boxScale = 1;
+    this.boxScale = 3;
     this.buildTreeNode(config, 0, this.tree, box);
 
     for (var i = 0; i < this.selection.length; ++i) {
@@ -253,6 +253,9 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
     if (config[0].title != "") parent.appendChild(selectorGroup);
 
     var insets = [];
+
+    // Compute aspect ratio from settings (assumes all images match 1920x1080)
+    var aspect = imageBoxSettings.height / imageBoxSettings.width;
 
     for (var i = 0; i < config.length; i++) {
         // Create tab
@@ -299,8 +302,16 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
             inset.style.backgroundImage = "url('" + config[i].image + "')";
             inset.style.backgroundRepeat = "no-repeat";
             inset.style.border = "0px solid black";
-            inset.style.width  = (imageBoxSettings.width / config.length-4) + "px";
-            inset.style.height = (imageBoxSettings.width / config.length-4) + "px";
+            
+            // Compute sizes with cap and aspect
+            var insetWidth = imageBoxSettings.width / 4;  // -4 for padding as in original
+            insetWidth = Math.max(0, insetWidth);  // Prevent negative
+            var insetHeight = (insetWidth) / config.length ;
+            insetHeight = Math.min(insetHeight, imageBoxSettings.height);  // Cap height to box height
+            
+            inset.style.width = insetWidth + "px";
+            inset.style.height = insetHeight + "px";
+        
             inset.name = config[i].title;
             var canvas = document.createElement("canvas");
             cachedDataUrl = canvas.toDataURL();
@@ -324,7 +335,9 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
     if (insets.length > 0) {
         var insetGroup = document.createElement('table');
         insetGroup.className = "insets";
-        insetGroup.width = imageBoxSettings.width;
+        insetGroup.style.width = "100%";
+        
+
         var tr = document.createElement('tr');
         tr.className = "insets";
         insetGroup.appendChild(tr);
@@ -332,7 +345,7 @@ ImageBox.prototype.buildTreeNode = function(config, level, nodeList, parent) {
         for (var i = 0; i < insets.length; ++i) {
             var auxDiv = document.createElement('td');
             auxDiv.className = "insets";
-            auxDiv.style.width = (imageBoxSettings.width / insets.length) + "px";
+            auxDiv.style.width = (100 / insets.length) + "%";  // Keep original TD width
             auxDiv.appendChild(document.createTextNode(insets[i].name));
             auxDiv.appendChild(insets[i]);
             tr.appendChild(auxDiv);
@@ -406,12 +419,43 @@ ImageBox.prototype.keyPressHandler = function(event) {
 
 ImageBox.prototype.mouseMoveHandler = function(event, image, insets) {
     var rect = image.getBoundingClientRect();
-    var xCoord = ((1.51515 * event.clientX - rect.left) - image.bgOffset - image.bgPosX)   / (image.bgWidth  / image.imWidth);
-    var yCoord = ((1.51515 * event.clientY - rect.top)  - image.bgPosY)                    / (image.bgHeight / image.imHeight);
+    // Removed 1.51515; use 1 unless proven needed (e.g., for DPI: window.devicePixelRatio)
+    var scaleFactor = 1; // Or window.devicePixelRatio if intended
+    var xCoord = ((scaleFactor * event.clientX - rect.left) - image.bgOffset - image.bgPosX) / (image.bgWidth / image.imWidth);
+    var yCoord = ((scaleFactor * event.clientY - rect.top) - image.bgPosY) / (image.bgHeight / image.imHeight);
 
     for (var i = 0; i < insets.length; ++i) {
-        insets[i].style.backgroundSize = (image.imWidth * this.boxScale) + "px " + (image.imHeight*this.boxScale) + "px";
-        insets[i].style.backgroundPosition = (insets[i].width/2  - xCoord*this.boxScale) + "px " 
-                                           + (insets[i].height/2 - yCoord*this.boxScale) + "px";
+        var bgW = image.imWidth * this.boxScale;
+        var bgH = image.imHeight * this.boxScale;
+        insets[i].style.backgroundSize = bgW + "px " + bgH + "px";
+
+        var posX = (insets[i].width / 2 - xCoord * this.boxScale);
+        var posY = (insets[i].height / 2 - yCoord * this.boxScale);
+
+        var insetW = insets[i].width;
+        var insetH = insets[i].height;
+
+        // For X
+        var lowerX = insetW - bgW;
+        var upperX = 0;
+        if (lowerX > upperX) {
+            // Can't fill: Center instead
+            posX = (insetW - bgW) / 2;
+        } else {
+            posX = Math.max(lowerX, Math.min(upperX, posX));
+        }
+
+        // For Y (independent clamp)
+        var lowerY = insetH - bgH;
+        var upperY = 0;
+        if (lowerY > upperY) {
+            posY = (insetH - bgH) / 2;
+        } else {
+            posY = Math.max(lowerY, Math.min(upperY, posY));
+        }
+
+        insets[i].style.backgroundPosition = posX + "px " + posY + "px";
     }
 }
+
+// 4GqZ3n#K8mkZN.@
