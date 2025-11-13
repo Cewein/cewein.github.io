@@ -4,22 +4,37 @@
 <title>Adaptive Mesh-Guided Pruning</title>
 <link rel="stylesheet" href="script/report.css">
 <script src="script/data.js"></script>
-<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/ImageBox.js"></script>
-<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/CopyrightBox.js"></script>
-<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/Chart.js"></script>
-<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/ChartBox.js"></script>
-<script src="https://graphics.cs.utah.edu/research/projects/area-restir/interactive-results-viewer/utils/TableBox.js"></script>
+<script src="script/ImageBox.js"></script>
 
 <script type="text/javascript">
+    let imageBoxUI;  // Global reference to the instance for re-creation
+    let resizeTimeout;  // For debouncing
+
+    function updateImageBox() {
+        // Clear existing content to avoid duplicates
+        const content = document.getElementById("content");
+        content.innerHTML = '';  // Reset the div
+
+        // Dynamically set based on current window size (90% of width for padding, cap at 2560px)
+        imageBoxSettings.width = Math.min(window.innerWidth * 0.9, 2560);
+        imageBoxSettings.height = imageBoxSettings.width * (1080 / 1920);  // Preserve 16:9 aspect ratio
+
+        // Re-create the ImageBox
+        if (data['imageBoxes']) {
+            imageBoxUI = new ImageBox(content, data['imageBoxes'], "Mesh Aware Pruning");
+        }
+    }
 
     function setup() {
-        content = document.getElementById("content");
-        
-        if (data['imageBoxes'])
-            imageBoxUI = new ImageBox(content, data['imageBoxes'], "Mesh Aware Pruning" );
+        updateImageBox();  // Initial setup
+
+        // Add resize listener with debounce (200ms delay)
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateImageBox, 200);
+        });
     }
 </script>
-
 **Adaptive Mesh-Guided Pruning for Mesh-in-the-Loop Gaussian Splatting**
 
 We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussian Splatting that introduces geometric awareness into the pruning of 3D Gaussian primitives. While MILo effectively combines photometric optimization with mesh supervision, its pruning relies mainly on appearance cues, often retaining redundant off-surface Gaussians "floaters" that increase memory use and distort reconstructed surfaces. AMGP addresses this issue by incorporating each Gaussian's signed distance to the reconstructed mesh into a unified importance score, blending photometric contribution, opacity, and geometric proximity. This mesh-aware strategy preserves Gaussians near the surface, resulting in compact, surface-aligned models that maintain fidelity and improve geometric coherence.
