@@ -4,7 +4,7 @@
         {
             "title":"Mesh Aware pruning for gaussian splatting",
             "date":"2025-11-13",
-            "type":"Shadertoy demo",
+            "type":"Blog post",
             "people":"Maximilien Nowak",
             "image":"mesh_aware.png",
             "abstract":"Mesh aware pruning technique applied to gaussian splatting for improved rendering efficiency.",
