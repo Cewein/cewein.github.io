@@ -2,6 +2,24 @@
     "data":
     [
         {
+            "title":"Mesh Aware pruning for gaussian splatting",
+            "date":"2025-11-13",
+            "type":"Shadertoy demo",
+            "people":"Maximilien Nowak",
+            "image":"mesh_aware.png",
+            "abstract":"Mesh aware pruning technique applied to gaussian splatting for improved rendering efficiency.",
+            "isPaper":false,
+            "paperLink":"",
+            "gotCode":true,
+            "codeLink":"github.com/Cewein/MILA",
+            "gotDemo":false,
+            "demoLink":"",
+            "gotWebpage":true,
+            "pageLink":"blog/mesh-aware-pruning.md.html",
+            "gotDataset":false,
+            "dataLink":""
+        },
+        {
             "title":"A Iridescent Material",
             "date":"2025-10-18",
             "type":"Shadertoy demo",
