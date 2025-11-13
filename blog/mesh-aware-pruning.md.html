@@ -37,7 +37,7 @@
 </script>
 **Adaptive Mesh-Guided Pruning for Mesh-in-the-Loop Gaussian Splatting**
 
-We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussian Splatting that introduces geometric awareness into the pruning of 3D Gaussian primitives. While MILo effectively combines photometric optimization with mesh supervision, its pruning relies mainly on appearance cues, often retaining redundant off-surface Gaussians "floaters" that increase memory use and distort reconstructed surfaces. AMGP addresses this issue by incorporating each Gaussian's signed distance to the reconstructed mesh into a unified importance score, blending photometric contribution, opacity, and geometric proximity. This mesh-aware strategy preserves Gaussians near the surface, resulting in compact, surface-aligned models that maintain fidelity and improve geometric coherence.
+We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussian Splatting that introduces geometric awareness into the pruning of 3D Gaussian primitives. While MILo effectively combines photometric optimization with mesh supervision, its pruning relies mainly on appearance cues, often retaining redundant off-surface Gaussians "floaters" that increase memory use and distort reconstructed surfaces. AMGP addresses this issue by incorporating each Gaussian signed distance to the mesh into a unified importance score, blending photometric contribution, opacity, and geometric proximity. This mesh-aware strategy preserves Gaussians near the surface, resulting in compact, surface-aligned models that maintain fidelity and improve geometric coherence.
 
 # Introduction
 
@@ -45,7 +45,7 @@ We present Adaptive Mesh-Guided Pruning, an extension of Mesh-in-the-Loop Gaussi
 
 Mesh-in-the-Loop Gaussian Splatting mitigates this issue by coupling Gaussian optimization with an explicit mesh extracted differentiably through a signed distance function pipeline. Yet, MILo's pruning remains largely photometric, focusing on rendering contributions and visibility metrics. This approach preserves visual quality but often neglects geometric consistency, allowing floaters that disrupt mesh regularization and surface smoothness.
 
-To overcome these drawbacks, Adaptive Mesh-Guided Pruning introduces a geometric bias in the pruning process by accounting for each Gaussian's proximity to the reconstructed mesh. This encourages a thin, surface-centered Gaussian band, producing coherent volumetric-surface hybrids while reducing primitives. Inspired by recent pruning methods like uncertainty- and gradient-based approaches, AMGP uniquely leverages mesh geometry for guidance, improving both efficiency and reconstruction accuracy, particularly valuable for robotics, AR, and 3D content creation.
+To overcome these drawbacks, Adaptive Mesh-Guided Pruning introduces a geometric bias in the pruning process by accounting for each Gaussian's proximity to the reconstructed mesh. This encourages a thin, surface-centered Gaussian band, producing coherent volumetric-surface hybrids while reducing primitives. Inspired by recent pruning methods like uncertainty-based and gradient-based approaches, AMGP uniquely leverages mesh geometry for guidance, improving both efficiency and reconstruction accuracy, particularly valuable for robotics, AR, and 3D content creation.
 
 # Mathematical Formulation
 
@@ -63,7 +63,7 @@ Training minimizes a joint loss $\mathcal{L}(\mathcal{G}*t, M_t)$ balancing phot
 We assess each Gaussian using three complementary signals:
 
 1. Photometric Contribution and Visibility
-   For each sampled camera view $v \in \mathcal{V}_t$, we compute per-Gaussian accumulated weights $w_i^{(v,t)} \ge 0$, representing how strongly each Gaussian contributes to rendered pixels. We then aggregate these contributions across all sampled views:
+   For each camera view $v \in \mathcal{V}_t$, we compute per-Gaussian accumulated weights $w_i^{(v,t)} \ge 0$, representing how strongly each Gaussian contributes to rendered pixels. We then aggregate these contributions across all sampled views:
 
    $$W_i^t = \sum_{v \in \mathcal{V}_t} w_i^{(v,t)}.$$
 
@@ -126,34 +126,62 @@ This ensures the pruning adapts to the scene's complexity and preserves the majo
 Below is a PyTorch implementation snippet for MILo's GaussianModel class, using mesh-aware importance and occupancy-based SDF approximation:
 
 ```python
-@torch.no_grad()
 def culling_with_mesh_aware_pruning(self, scene, render_simp, iteration, args, pipe, background):
     imp_score = torch.zeros(self._xyz.shape[0], device='cuda')
-    views = scene.getTrainCameras_warn_up(iteration, args.warn_until_iter)
+    views = scene.getTrainCameras_warn_up(iteration, args.warn_until_iter, scale=1.0, scale2=2.0).copy()
 
-    count_rad = torch.zeros_like(imp_score).unsqueeze(1)
-    count_vis = torch.zeros_like(imp_score).unsqueeze(1)
+    self._culling=torch.zeros((self._xyz.shape[0], len(views)), dtype=torch.bool, device='cuda')
+
+    count_rad = torch.zeros((self._xyz.shape[0], 1), device='cuda')
+    count_vis = torch.zeros((self._xyz.shape[0], 1), device='cuda')
 
     for view in views:
-        render_pkg = render_simp(view, self, pipe, background)
-        accum_weights = render_pkg["accum_weights"]
+        culling_mask = self._culling[:, view.uid]
+        active_indices = torch.nonzero(~culling_mask).squeeze()
+
+        render_pkg = render_simp(view, self, pipe, background, culling=culling_mask)
+
+        accum_weights = render_pkg["accum_weights"]  
         radii = render_pkg["radii"]
 
-        imp_score += accum_weights
-        count_rad += (radii > 0).float().unsqueeze(1)
-        count_vis += (accum_weights > 0).float().unsqueeze(1)
+        imp_score[active_indices] += accum_weights
 
+        non_prune_mask = init_cdf_mask(importance=accum_weights, thres=0.99)
+
+        # Update culling for active Gaussians only (culled remain culled)
+        self._culling[active_indices, view.uid] = (non_prune_mask == False)
+
+        # Update count_rad for active Gaussians where radii > 0
+        rad_pos = (radii > 0)
+        count_rad[active_indices[rad_pos]] += 1
+
+        # Update count_vis for active Gaussians where non_prune_mask
+        vis_pos = non_prune_mask
+        count_vis[active_indices[vis_pos]] += 1
+
+    # Compute distances using occupancy-based SDF shortcut
     self.set_occupancy_mode("occupancy_shift")
-    occupancy = self.get_occupancy[:, 0].squeeze()
-    beta = args.mesh_prune_band
-    sdf_values = beta * (1.0 - 2.0 * occupancy).clamp(-beta, beta)
+    occupancy = self.get_occupancy[:, 0].squeeze() # (N,)
+    # Example mapping: [0,1] -> [band, -band]; adjust beta/band to scene units (e.g., lambda * typical_width ~1)
+    beta = args.mesh_prune_band  # Reuse band as scaling factor
+    sdf_values = beta * (1.0 - 2.0 * occupancy)  # High occ -> negative/inside, low -> positive/outside
+    sdf_values = torch.clamp(sdf_values, -beta, beta)  # Truncate
     dist = torch.abs(sdf_values)
 
+    # Compute mesh-aware importance
     alpha = self.get_opacity.squeeze()
+    # Optionally normalize imp_score by number of views: imp_score /= len(views)
     I = alpha * imp_score * torch.exp(-args.mesh_prune_lambda * dist)
 
+    # Global non_prune_mask via CDF
     non_prune_mask = init_cdf_mask(importance=I, thres=args.mesh_prune_keep_mass)
-    prune_mask = (count_vis <= args.mesh_prune_min_vis)[:, 0] | (~non_prune_mask) | (dist > args.mesh_prune_band)
+
+    self.factor_culling = count_vis / (count_rad + 1e-1)
+
+    prune_mask = (count_vis <= args.mesh_prune_min_vis)[:, 0]
+    prune_mask = torch.logical_or(prune_mask, non_prune_mask == False)
+    prune_mask = torch.logical_or(prune_mask, dist > args.mesh_prune_band)
+
     self.prune_points(prune_mask)
 ```
 
