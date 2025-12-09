@@ -125,7 +125,7 @@ This ensures the pruning adapts to the scene's complexity and preserves the majo
 
 Below is a PyTorch implementation snippet for MILo's GaussianModel class, using mesh-aware importance and occupancy-based SDF approximation:
 
-```python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ python
 def culling_with_mesh_aware_pruning(self, scene, render_simp, iteration, args, pipe, background):
     imp_score = torch.zeros(self._xyz.shape[0], device='cuda')
     views = scene.getTrainCameras_warn_up(iteration, args.warn_until_iter, scale=1.0, scale2=2.0).copy()
@@ -183,7 +183,7 @@ def culling_with_mesh_aware_pruning(self, scene, render_simp, iteration, args, p
     prune_mask = torch.logical_or(prune_mask, dist > args.mesh_prune_band)
 
     self.prune_points(prune_mask)
-```
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Comparison to MILo's Dense Pruning
 
