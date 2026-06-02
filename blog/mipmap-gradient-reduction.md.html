@@ -3,8 +3,9 @@
                   **Free Mini-Batch Gradients from Mipmap Reduction**
 
 Training a neural network inside a fragment shader runs into one annoying obstacle: there is no obvious way to average gradients across a mini-batch. A pixel only sees its own work, and Shadertoy gives you neither compute shaders nor atomic operations. This post documents a small neural network that trains in real time on Shadertoy and sidesteps the problem by repurposing the GPU's built-in *mipmap*   the texture-shrinking machinery that normally exists to avoid aliasing   as a free parallel arithmetic mean. Each parameter of the network gets a 16×16 patch of per-sample gradients in a texture, and a single texture fetch at the right resolution level returns the batched gradient   exactly, not approximately, as long as the layout is aligned to the mipmap grid.
+<p style="text-align:center"><a href="https://www.shadertoy.com/view/f3l3WM" target="_blank" rel="noopener">View the shader running live on Shadertoy</a></p>
 
-# What this is
+# Introduction
 
 Shadertoy is an online sandbox for writing *fragment shaders*: small GLSL programs that run once per pixel and output a color. Most Shadertoy shaders draw things   fractals, raymarched scenes, demos. The shader described here does something stranger: it trains a neural network. The network's weights live in a texture. Every frame, the GPU computes a forward pass, a backward pass, and an optimizer step, then renders the current state of the network's prediction over the target it's trying to fit. Watching the page in the browser, you literally see the network learn.
 
@@ -58,17 +59,16 @@ The shader gives itself four passes per frame, organized as ping-ponging texture
 <figcaption><strong>Figure 1.</strong> The four-buffer training pipeline. Buffer A stores the parameters and Adam moments; Buffer B refreshes the mini-batch every frame; Buffer C holds one per-sample gradient per pixel; the Image pass renders the current network output. The blue arrow is the only place mipmap reduction is used, and it is the subject of this post.</figcaption>
 </figure>
 
-# A two-paragraph neural-network primer
+# Prior work
 
-A *multi-layer perceptron* (MLP) is the simplest kind of neural network: a stack of layers, each of which takes a vector of numbers and produces another vector by computing $\sigma(Wx + b)$   a matrix multiplication, plus a bias vector, passed through a non-linear function $\sigma$ like $\tanh$. Training means adjusting the matrices $W$ and biases $b$ so the network's output, on some training data, gets close to the target output. The objective is encoded as a *loss* $\mathcal{L}$   for regression, typically the squared error between prediction and target. The standard recipe for adjustment is *gradient descent*: compute how the loss changes when each parameter is nudged (the *gradient*, $\partial\mathcal{L}/\partial\theta$), and step each parameter in the direction that decreases the loss.
+A *multi-layer perceptron* (MLP) is the simplest kind of neural network: a stack of layers, each of which takes a vector of numbers and produces another vector by computing $\sigma(Wx + b)$   a matrix multiplication, plus a bias vector, passed through a non-linear function $\sigma$ like $\tanh$ (in parctice a relu gate but tanh is included in glsl). Training means adjusting the matrices $W$ and biases $b$ so the network's output, on some training data, gets close to the target output. The objective is encoded as a *loss* $\mathcal{L}$   for regression, typically the squared error between prediction and target. The standard recipe for adjustment is *gradient descent*: compute how the loss changes when each parameter is nudged (the *gradient*, $\partial\mathcal{L}/\partial\theta$), and step each parameter in the direction that decreases the loss.
 
 For stability, gradient descent is almost always done in *mini-batches*: rather than computing the gradient on one training sample at a time (noisy) or all of them at once (expensive), you average the gradient over a small batch of $K$ samples. The averaging is the bottleneck this post is about. Computing per-sample gradients in a fragment shader is straightforward   each pixel runs an independent forward and backward pass for its sample. *Averaging* them is the hard part, because averaging across pixels is exactly the cross-pixel communication that fragment shaders refuse to do.
 
-The shader fits a single 1D function $y(x) = \sin(8\pi x)\cos(x^2)\cos(16 x)\sin(-4 x)$, deliberately picked to be high-frequency enough that the network actually needs Fourier features [#Tancik2020] to fit it   a technique, popularized by NeRF [#Mildenhall2020], where the scalar input $x$ is first expanded into a vector of sines and cosines at increasing frequencies, giving the network something to grab onto besides a single smooth coordinate. The architecture is PE($L=6$) → 16 tanh → 16 tanh → 1 linear, for 497 parameters total, optimized with Adam [#Kingma2014] over a mini-batch of $K = 256$ samples drawn fresh every frame.
+The shader fits a single 1D function $y(x)$ deliberately picked to be high-frequency enough that the network actually needs Fourier features [#Tancik2020] to fit it   a technique, popularized by NeRF [#Mildenhall2020], where the scalar input $x$ is first expanded into a vector of sines and cosines at increasing frequencies, giving the network something to grab onto besides a single smooth coordinate. The architecture is PE($L=6$) → 16 tanh → 16 tanh → 1 linear, for 497 parameters total, optimized with Adam [#Kingma2014] over a mini-batch of $K = 256$ samples drawn fresh every frame for each parameter.
+## Mipmaps
 
-# Why mipmaps
-
-A *mipmap* is something graphics programmers see every day: a precomputed pyramid of progressively shrunken copies of a texture. Level 0 is the original texture. Level 1 is the same image at half the resolution in each axis   each texel is the average of a 2×2 block of level-0 texels. Level 2 halves again, and so on. The reason mipmaps exist is anti-aliasing: when you render a faraway object, you want each on-screen pixel to sample a color that already represents an *average* over many texels, not a single point lookup that might fall on any color.
+A mipmap is a precomputed pyramid of progressively shrunken copies of a texture. Level 0 is the original texture. Level 1 is the same image at half the resolution in each axis   each texel is the average of a 2×2 block of level-0 texels. Level 2 halves again, and so on. The reason mipmaps exist is anti-aliasing: when you render a faraway object, you want each on-screen pixel to sample a color that already represents an *average* over many texels, not a single point lookup that might fall on any color.
 
 The relevant observation for this shader is: **mipmap downsampling is, mathematically, an arithmetic mean.** Each texel at mipmap level $\ell$ is the average of the $2^\ell \times 2^\ell = 4^\ell$ texels under it at level 0. If we arrange Buffer C so that the $K = 4^\ell$ per-sample gradients for one parameter occupy exactly one $2^\ell \times 2^\ell$ block, then reading that block's location at mipmap level $\ell$ returns the *exact* mean of those gradients. The GPU has already done the averaging for us, in hardware, the moment it built the mipmap pyramid for that frame.
 
@@ -76,11 +76,11 @@ In other words: we want $\bar{g}_p = \tfrac{1}{K}\sum_k g_{p,k}$. The graphics c
 
 # The pipeline
 
-Four passes cycle every frame. Buffer A holds the parameters and the Adam optimizer state, with $(w, m, v)$   the weight, the first-moment estimate, and the second-moment estimate   packed into the RGB channels of a single texel per parameter. Buffer B draws $K = 256$ fresh training samples each frame, with each pixel storing one $(x, y)$ pair from a deterministic hash seeded by `iFrame`. Buffer C is the centerpiece: a 2D grid where each pixel stores a *single per-sample gradient for a single parameter*. The Image pass reads Buffer A and renders the network's current prediction over the target.
+Four passes cycle every frame as display in figure 1. Buffer A holds the parameters and the Adam optimizer state, with $(w, m, v)$   the weight, the first-moment estimate, and the second-moment estimate   packed into the RGB channels of a single texel per parameter. Buffer B draws $K = 256$ fresh training samples each frame, with each pixel storing one $(x, y)$ pair. Buffer C is the centerpiece: a 2D grid where each pixel stores a *single per-sample gradient for a single parameter*. The Image pass reads Buffer A and renders the network's current prediction over the target.
 
-Buffer C reads weights from A and samples from B and writes per-sample gradients. Buffer A reads averaged gradients from C and applies one Adam step. Buffer B refreshes the sample set. Image visualizes.
+In short, buffer C reads weights from A and samples from B and writes per-sample gradients. Buffer A reads averaged gradients from C and applies one Adam step. Buffer B refreshes the sample set. Image visualizes.
 
-# The mipmap trick, formally
+# The mipmap trick
 
 For each parameter $\theta_p$, what we want is the standard mini-batch gradient
 
@@ -88,7 +88,7 @@ $$\bar{g}_p = \frac{1}{K} \sum_{k=1}^{K} \frac{\partial \mathcal{L}_k}{\partial 
 
 Buffer C stores the $K$ per-sample gradients for parameter $\theta_p$ in a contiguous $K_X \times K_Y$ block of pixels, with $K_X = K_Y = 16$ and $K = K_X K_Y = 256$. The block for parameter $p$ sits at offset $(p_c \cdot K_X,\ p_r \cdot K_Y)$ in the texture, where $(p_c, p_r)$ is the parameter's 2D index in a row-major packing.
 
-Mipmapping with the default box filter produces, at mipmap level $\ell$ (in OpenGL terminology, *LOD*   Level Of Detail),
+Mipmapping with the default box filter produces, at mipmap level $\ell$,
 
 $$T_\ell(p_c, p_r) = \frac{1}{4^\ell} \sum_{i=0}^{2^\ell - 1} \sum_{j=0}^{2^\ell - 1} T_0\!\left(2^\ell p_c + i,\ 2^\ell p_r + j\right).$$
 
@@ -422,7 +422,7 @@ $$m \leftarrow \beta_1 m + (1 - \beta_1) \bar{g}, \qquad v \leftarrow \beta_2 v 
 
 $$\hat{m} = \frac{m}{1 - \beta_1^t}, \quad \hat{v} = \frac{v}{1 - \beta_2^t}, \qquad w \leftarrow w - \eta\,\frac{\hat{m}}{\sqrt{\hat{v}} + \varepsilon}.$$
 
-Here $m$ and $v$ are exponential moving averages of the gradient and its square (Adam's "moments"); $\hat{m}$ and $\hat{v}$ are their bias-corrected versions, important during the first few hundred steps when the moments are still warming up from zero; $\eta$ is the learning rate; $\beta_1, \beta_2, \varepsilon$ are the standard Adam constants. Weights are initialized once at `iFrame == 0` with Xavier-uniform scaling [#Glorot2010] using a per-pixel hash, which is enough for the network to start in a sensible regime without an external init pass.
+Here $m$ and $v$ are exponential moving averages of the gradient and its square (Adam's "moments"); $\hat{m}$ and $\hat{v}$ are their bias-corrected versions, important during the first few hundred steps when the moments are still warming up from zero; $\eta$ is the learning rate; $\beta_1, \beta_2, \varepsilon$ are the standard Adam constants. Weights are initialized once with Xavier-uniform scaling [#Glorot2010] using a per-pixel hash, which is enough for the network to start in a sensible regime without an external init pass.
 
 # Caveats
 
