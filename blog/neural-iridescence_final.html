@@ -1,0 +1,3157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neural Radiance for an Iridescent Sphere</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\\\[',right:'\\\\]',display:true},{left:'\\\\(',right:'\\\\)',display:false}],throwOnError:false});"></script>
+
+<style>
+/* Markdeep-inspired styling: serif body, white paper, charcoal ink,
+   centered title, all-caps small-caps section headers, numbered, no
+   framed cards. Mirrors the canonical Markdeep book.css aesthetic. */
+:root {
+  --paper: #ffffff;
+  --ink: #0e0e0e;
+  --ink-soft: #2a2a2a;
+  --ink-faint: #6e6e6e;
+  --ink-muted: #999999;
+  --rule: #cfcfcf;
+  --rule-soft: #e6e6e6;
+  --link: #1a4ea3;
+  --link-visited: #663399;
+  --code-bg: #f4f4f4;
+  --code-fg: #222;
+  --code-comment: #888;
+  --note-bg: #fafafa;
+  --serif: 'PT Serif', 'Tinos', Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --display: 'PT Serif', 'Tinos', Palatino, Georgia, serif;
+  --mono: 'Source Code Pro', 'Courier New', Courier, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+}
+@media (max-width: 700px) {
+  .page { padding: 28px 18px 80px; }
+  body { font-size: 15.5px; }
+}
+
+/* --- title block --- */
+.hero {
+  text-align: center;
+  margin: 30px 0 56px;
+  padding-bottom: 24px;
+}
+.hero .meta { display: none; }
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.18;
+  margin: 0 0 0.4em;
+  text-align: center;
+}
+.hero h1 .iri-word {
+  font-style: italic;
+  background: linear-gradient(110deg,
+              #c41a5a 0%, #b8651a 25%,
+              #2a8a4a 50%, #1f6aa5 75%,
+              #5a3d8a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+.hero .lede {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  font-style: italic;
+  max-width: 580px;
+  margin: 14px auto 24px;
+  text-align: center;
+}
+.byline {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0 0 28px;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+.byline .sep { margin: 0 8px; color: var(--ink-muted); }
+
+.hero .canvas-wrap {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 380px;
+  margin: 22px auto 10px;
+  background: transparent;
+  padding: 0;
+}
+.hero .canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.hero .corner-mark { display: none; }
+.hero .canvas-caption {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  font-style: italic;
+  margin-top: 10px;
+  text-align: center;
+}
+.hero .canvas-caption b {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--ink-soft);
+}
+.hero .canvas-caption b::after { content: '.'; }
+
+.hero .stats {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 28px auto 8px;
+  max-width: 600px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 0;
+}
+.hero .stat {
+  padding: 4px 18px;
+  border-right: 1px solid var(--rule);
+  text-align: center;
+}
+.hero .stat:last-child { border-right: none; }
+.hero .stat .v {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.hero .stat .l {
+  font-family: var(--display);
+  font-size: 11px;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+/* --- typography --- */
+h1, h2, h3, h4 {
+  font-family: var(--display);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  margin: 56px 0 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ink-soft);
+  text-align: left;
+}
+h3 {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+  margin: 32px 0 8px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+}
+h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 22px 0 6px;
+}
+
+p {
+  margin: 0 0 0.95em;
+  text-align: justify;
+  hyphens: auto;
+}
+h1 + p, h2 + p, h3 + p, h4 + p { text-indent: 0; }
+p + p { text-indent: 1.5em; margin-top: -0.55em; }
+
+a {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(26, 78, 163, 0.4);
+}
+a:hover { border-bottom-style: solid; }
+a:visited { color: var(--link-visited); }
+
+em { font-style: italic; }
+strong { font-weight: 700; }
+
+code, kbd {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  color: var(--code-fg);
+  background: var(--code-bg);
+  padding: 0.05em 0.35em;
+  border-radius: 1px;
+}
+
+ul, ol { padding-left: 1.5em; margin: 0.5em 0 1em; }
+li { margin-bottom: 0.3em; }
+
+/* --- body sections — flow, no cards --- */
+.section { display: block; margin: 0; }
+.section > .body,
+.section > .full,
+.section > .gutter,
+.section > .wide { display: block; }
+.section-num { display: none; }
+
+/* counter-based section numbering: each <section.section> gets a number,
+   inserted before its h2 — like markdeep auto-numbering. */
+body { counter-reset: sec; }
+.section { counter-increment: sec; }
+.section > .body > h2::before {
+  content: counter(sec) ". ";
+  color: var(--ink);
+  font-weight: 700;
+}
+/* abstract / précis section: don't number it (it's the precis) */
+.section.no-num { counter-increment: none; }
+.section.no-num > .body > h2::before { content: none; }
+
+/* sidenote callout — restrained markdeep admonition */
+.gutter {
+  margin: 16px 0 18px;
+  padding: 6px 16px 6px 14px;
+  border-left: 3px solid var(--ink-faint);
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  font-style: italic;
+  background: var(--note-bg);
+}
+.gutter p { margin-bottom: 0.4em; text-indent: 0; text-align: left; }
+.gutter p:last-child { margin-bottom: 0; }
+.gutter .label {
+  font-style: normal;
+  font-family: var(--display);
+  font-size: 11px;
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+  color: var(--ink);
+  display: inline;
+  margin-right: 6px;
+  font-weight: 700;
+}
+.gutter .label::after { content: '.'; }
+
+/* --- figures — markdeep style with caption beneath --- */
+.specimen {
+  position: relative;
+  background: transparent;
+  border: none;
+  margin: 32px auto;
+  padding: 0;
+  text-align: center;
+}
+.specimen::before { content: ''; display: none; }
+.specimen .caption {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  margin: 14px auto 0;
+  padding: 0 4px;
+  text-align: center;
+  max-width: 640px;
+}
+.specimen .caption b {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: var(--display);
+}
+.specimen .caption b::after { content: ':'; }
+.specimen canvas {
+  display: block;
+  margin: 0 auto;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  /* aspect ratio is set per-canvas inline via the width/height HTML
+     attributes; locking height:auto and width:100% means the layout
+     box is determined entirely by container width × intrinsic ratio,
+     not by the backing bitmap, so JS-side bitmap resizes can't push
+     the layout around. */
+}
+.specimen svg.diagram {
+  display: block;
+  margin: 0 auto;
+  background: var(--paper);
+  max-width: 100%;
+}
+
+/* controls under figures */
+.ctrls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: center;
+  margin: 12px auto 4px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--note-bg);
+  text-align: left;
+  max-width: 720px;
+}
+.ctrl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+  flex: 1;
+}
+.ctrl label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+}
+.ctrl label .v {
+  color: var(--ink);
+  font-weight: 700;
+}
+.ctrl input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--rule);
+  outline: none;
+  cursor: pointer;
+}
+.ctrl input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  background: var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.ctrl input[type=range]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  background: var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--paper);
+}
+.btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
+button.tog, button.btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: all 0.12s;
+  border-radius: 1px;
+}
+button.tog:hover, button.btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+button.tog.on {
+  border-color: var(--ink);
+  color: var(--paper);
+  background: var(--ink);
+}
+
+/* --- math display --- */
+.eq { margin: 1em 0; text-align: center; overflow-x: auto; }
+.eq.numbered {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.eq.numbered .num {
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: right;
+}
+.katex { font-size: 1em !important; }
+
+/* --- code blocks --- */
+pre.code {
+  background: var(--code-bg);
+  border: none;
+  border-left: 3px solid var(--ink-faint);
+  color: var(--code-fg);
+  padding: 12px 16px;
+  margin: 18px 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  position: relative;
+}
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  font-family: var(--display);
+  font-variant: small-caps;
+}
+pre.code .k { color: #aa3731; font-weight: 600; }
+pre.code .n { color: #2a8a4a; }
+pre.code .s { color: #b8651a; }
+pre.code .c { color: var(--code-comment); font-style: italic; }
+pre.code .t { color: #1f5e94; font-weight: 600; }
+
+/* --- divider — dotted ornament between sections --- */
+.divider { display: none; }
+.divider.ornament {
+  display: block;
+  border: none;
+  height: 0;
+  text-align: center;
+  margin: 36px 0;
+}
+.divider.ornament::before {
+  content: '· · ·';
+  letter-spacing: 0.6em;
+  color: var(--ink-muted);
+  font-size: 18px;
+}
+
+/* --- bibliography — references with [N] hanging indent --- */
+.biblio {
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--rule);
+  padding-top: 14px;
+  margin-top: 24px;
+  counter-reset: ref;
+}
+.biblio .entry {
+  margin-bottom: 6px;
+  padding-left: 2.4em;
+  position: relative;
+  text-indent: 0;
+  text-align: left;
+  counter-increment: ref;
+}
+.biblio .entry::before {
+  content: '[' counter(ref) ']';
+  position: absolute;
+  left: 0;
+  width: 2em;
+  color: var(--ink-soft);
+}
+.biblio .entry .auth { color: var(--ink); font-weight: 600; }
+.biblio .entry .yr { color: var(--ink-soft); margin: 0 4px; font-style: italic; }
+
+/* --- network diagram --- */
+svg.diagram { display: block; max-width: 100%; height: auto; }
+svg.diagram .node { fill: var(--paper); stroke: var(--ink-soft); stroke-width: 1; }
+svg.diagram .node.in { stroke: #1a4ea3; fill: rgba(26,78,163,0.06); }
+svg.diagram .node.h { stroke: var(--ink-soft); fill: #f6f6f6; }
+svg.diagram .node.out-r { fill: rgba(196,26,90,0.18); stroke: #c41a5a; }
+svg.diagram .node.out-g { fill: rgba(42,138,74,0.18); stroke: #2a8a4a; }
+svg.diagram .node.out-b { fill: rgba(31,106,165,0.18); stroke: #1f6aa5; }
+svg.diagram .edge { stroke: var(--ink-faint); stroke-width: 0.5; fill: none; opacity: 0.18; }
+svg.diagram .edge.active { stroke: var(--ink); opacity: 0.9; stroke-width: 1.2; }
+svg.diagram text { fill: var(--ink-soft); font-family: var(--mono); font-size: 10px; }
+svg.diagram text.title {
+  fill: var(--ink); font-size: 11px;
+  font-family: var(--display);
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+#hemi-svg line, #hemi-svg path, #hemi-svg ellipse { stroke: var(--ink-soft); }
+#hemi-svg text { fill: var(--ink-soft); font-family: var(--mono); }
+
+canvas.plot { display: block; }
+
+/* table-of-contents */
+.toc {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: 36px 0;
+  padding: 14px 18px;
+  background: var(--note-bg);
+  font-family: var(--serif);
+  font-size: 14.5px;
+}
+.toc .toc-title {
+  font-family: var(--display);
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.toc ol { margin: 0; padding-left: 1.6em; }
+.toc li { margin: 2px 0; }
+.toc a { color: var(--ink-soft); border-bottom: none; }
+.toc a:hover { color: var(--link); }
+
+/* footer */
+.footer {
+  margin-top: 80px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  text-align: center;
+  font-style: italic;
+}
+.footer span { display: inline-block; margin: 0 10px; }
+
+.smallcaps { font-variant: small-caps; letter-spacing: 0.04em; }
+
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-size: 3.4em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.9;
+  margin: 0.06em 0.1em -0.05em 0;
+  color: var(--ink);
+}
+
+.tag-row, .tag { display: none; }
+
+.swatch {
+  display: inline-block;
+  width: 11px; height: 11px;
+  vertical-align: -1px;
+  margin-right: 4px;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.s-r { background: #c41a5a; }
+.s-g { background: #2a8a4a; }
+.s-b { background: #1f6aa5; }
+.s-y { background: #b8651a; }
+
+/* tables */
+.specimen table { color: var(--ink-soft); margin: 0 auto; }
+.specimen table thead th { color: var(--ink-faint) !important; }
+.specimen table td { border-color: var(--rule-soft) !important; }
+
+/* shadertoy embeds */
+.shadertoy-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 1px solid var(--rule);
+}
+.shadertoy-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+</style>
+
+
+</head>
+<body>
+
+<div class="page">
+<!-- TITLE BLOCK -->
+<section class="hero">
+  <h1>Compressing an <span class="iri-word">iridescent</span> integral</h1>
+  <div class="byline">A 122-parameter neural radiance cache for path-traced iridescence<span class="sep">
+  <p class="lede">A 1D radiance function, fit by an mlp whose architecture chose itself and replaces the entire iridescent brdf branch of a monte carlo path tracer.</p>
+  <div class="canvas-wrap">
+    <canvas id="hero-sphere"></canvas>
+  </div>
+</section>
+
+<nav class="toc" aria-label="Table of contents">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#sec-precis">An iridescent BRDF, integrated over the sky, then forgotten</a></li>
+    <li><a href="#sec-integral">The integral a fragment shader is supposed to compute</a></li>
+    <li><a href="#sec-brdf">Three lobes, one energy budget</a></li>
+    <li><a href="#sec-thinfilm">Thin-film Fresnel: where the colour comes from</a></li>
+    <li><a href="#sec-mis">Building targets with three-strategy MIS</a></li>
+    <li><a href="#sec-symmetry">Radiance is a function of one scalar</a></li>
+    <li><a href="#sec-spectral">Spectral bias and Fourier features</a></li>
+    <li><a href="#sec-network">The deployed network</a></li>
+    <li><a href="#sec-darts">How (L, H) chose itself</a></li>
+    <li><a href="#sec-glsl">Twelve lines of GLSL</a></li>
+    <li><a href="#sec-residuals">Where error concentrates</a></li>
+    <li><a href="#sec-limits">Limits</a></li>
+    <li><a href="#sec-shaders">Related shaders</a></li>
+    <li><a href="#sec-bib">References</a></li>
+  </ol>
+</nav>
+
+<hr class="divider ornament">
+
+<!-- ABSTRACT -->
+<section class="section no-num" id="sec-precis">
+  <div class="body">
+    <span class="section-num">§ 0 — Précis</span>
+    <h2>An iridescent BRDF, integrated over the sky, then forgotten</h2>
+    <p class="dropcap">Path-traced iridescence is brutally expensive. 
+      Because, a thin-film Fresnel oscillates sharply with viewing angle, then it is multiplied by a microfacet specular peak and an environment map,
+      the resulting integrand has frequency content far above what low-discrepancy sampling can resolve at any reasonable budget (i.e. spp bellow 1024). 
+      A converged frame needs thousands of BRDF evaluations per pixel. We want the same look at full frame rate.</p>
+    <p>For this we can observe that under a uniform white sky the converged radiance at any point on a perfect sphere depends only on $\cos\theta_v = \mathbf{n}\cdot\boldsymbol{\omega}_o$ or one scalar. We can then fit that scalar function with a Fourier-encoded MLP whose width and depth fall out of a continuous architecture search to shrink a MLP so it can run at interactive frame rate.</p>
+    <div class="tag-row">
+      <span class="tag">Path tracing</span>
+      <span class="tag">Thin-film Fresnel</span>
+      <span class="tag">MIS</span>
+      <span class="tag">Fourier features</span>
+      <span class="tag">DARTS</span>
+      <span class="tag">GLSL</span>
+    </div>
+  </div>
+</section>
+
+<!-- §1 THE PROBLEM -->
+<section class="section" id="sec-integral">
+  <div class="body">
+    <span class="section-num">§ 1 — The integral</span>
+    <h2>What a fragment shader is supposed to compute</h2>
+    <p>Outgoing radiance at a surface point in direction $\boldsymbol{\omega}_o$ is the hemispherical integral</p>
+    <div class="eq numbered">
+      <div></div>
+      <div>$$L_o(\boldsymbol{\omega}_o)=\int_{\Omega} f(\boldsymbol{\omega}_i,\boldsymbol{\omega}_o)\, L_i(\boldsymbol{\omega}_i)\, (\mathbf{n}\!\cdot\!\boldsymbol{\omega}_i)\, d\boldsymbol{\omega}_i$$</div>
+      <div class="num">(1)</div>
+    </div>
+    <p>Eq. 1 is the rendering equation restricted to a single bounce. The radiance $L_o$ leaving the surface in direction $\boldsymbol{\omega}_o$ is the sum, over every incoming direction $\boldsymbol{\omega}_i$ on the upper hemisphere $\Omega$, of three multiplied terms: the incident radiance $L_i(\boldsymbol{\omega}_i)$ arriving from that direction, the BRDF $f(\boldsymbol{\omega}_i,\boldsymbol{\omega}_o)$ giving the fraction of it redirected toward the camera, and the cosine factor $\mathbf{n}\cdot\boldsymbol{\omega}_i$ that accounts for foreshortening at grazing angles. Evaluate this integral at every shaded pixel and you have a rendered image.</p>
+    <p>Although the integration domain is only two-dimensional, this can make the problem appear simpler than it actually is. The integrand depends on three unit vectors: the outgoing direction $\boldsymbol{\omega}_o$, the surface normal $\mathbf{n}$, and the incoming direction $\boldsymbol{\omega}_i$. These vectors also implicitly define the half-vector on which the BRDF depends. Once the iridescent BRDF described in later sections is substituted into the integrand, this dependence becomes expensive enough to challenge real-time rendering budgets.
+</p><p>The output, however, is much lower-dimensional. Under a uniform sky and an isotropic material, symmetry reduces the outgoing radiance $L_o$ to a function of a single scalar: $\cos\theta_v$. This scalar is precisely the input to our compact neural network.</p>
+  </div>
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 2 — Hemispherical integration domain">
+      <svg viewBox="0 0 720 320" class="diagram" id="hemi-svg" style="max-width: 640px;">
+        <!-- ground -->
+        <line x1="60" y1="240" x2="660" y2="240" stroke="#2a2a2a" stroke-width="1"/>
+        <!-- back ellipse (rim of hemisphere base, dashed) -->
+        <ellipse cx="360" cy="240" rx="180" ry="28" fill="none" stroke="#6e6e6e" stroke-width="0.8" stroke-dasharray="3 3"/>
+        <!-- the hemisphere dome itself -->
+        <path d="M 180 240 A 180 180 0 0 1 540 240" fill="none" stroke="#2a2a2a" stroke-width="1.2"/>
+        <!-- normal -->
+        <line x1="360" y1="240" x2="360" y2="55" stroke="#2a2a2a" stroke-width="1.2"/>
+        <polygon points="360,55 354,68 366,68" fill="#2a2a2a"/>
+        <text x="370" y="60" fill="#2a2a2a" font-style="italic">n</text>
+        <!-- omega_o, the outgoing -->
+        <line x1="360" y1="240" x2="488" y2="118" stroke="#1a4ea3" stroke-width="1.4"/>
+        <polygon points="488,118 478,123 482,134" fill="#1a4ea3"/>
+        <text x="498" y="116" fill="#1a4ea3" font-style="italic">ω_o</text>
+        <!-- theta_v arc -->
+        <path d="M 360 175 A 65 65 0 0 1 414 196" fill="none" stroke="#1a4ea3" stroke-width="0.8"/>
+        <text x="392" y="172" fill="#1a4ea3" font-size="9">θ_v</text>
+        <!-- omega_i, an incoming sample direction -->
+        <line x1="360" y1="240" x2="240" y2="135" stroke="#c41a5a" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <text x="216" y="130" fill="#c41a5a" font-style="italic">ω_i</text>
+        <!-- sample cloud (filled in by JS) -->
+        <g id="hemi-samples"></g>
+      </svg>
+      <div class="caption">The hemisphere of incoming directions over a surface point.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §2 THE BRDF -->
+<section class="section" id="sec-brdf">
+<div class="body">
+  <span class="section-num">§ 2 — The BRDF</span>
+  <h2>Three lobes, one energy budget</h2>
+
+  <p>
+    The material response used in the lighting integral is modeled as a sum of three coupled lobes:
+    a rough specular term, a diffuse remainder, and a clearcoat layer.
+  </p>
+
+  <div class="eq">
+    $$f \;=\; \underbrace{D\cdot V\cdot F_\text{base}}_{\text{rough specular}}
+    \;+\;
+    \underbrace{(1{-}F_\text{base})\cdot
+    \text{B}(\boldsymbol{\omega}_i,\boldsymbol{\omega}_o,\alpha)}_{\text{diffuse remainder}}
+    \;+\;
+    \underbrace{D_\text{cc}\cdot V_\text{cc}\cdot F_\text{cc}}_{\text{clearcoat}}$$
+  </div>
+
+  <p>
+    Here, $D$ denotes the GGX normal distribution function, $V$ is the Smith correlated
+    visibility term, and $\text{B}$ is Disney’s roughness-dependent diffuse model, including
+    its retroreflective component. The terms $F_\text{base}$ and $F_\text{cc}$ are
+    spectrally integrated thin-film Fresnel terms evaluated in closed form. We model them as
+    a three-layer dielectric stack: air, a thin film of thickness $d_\text{inc}$ and refractive
+    index $\eta_2$, and a substrate with refractive index $\eta_3$. The evaluation assumes
+    unpolarized light and truncates the internal reflection series at $m \le 3$ bounces.
+  </p>
+
+  <p>
+    The three lobes are not independent. Two coupling terms combine them into a single
+    energy budget. First, the diffuse term is scaled by $(1-F_\text{base})$, so energy already
+    reflected by the base specular layer is not also scattered diffusely. This is a
+    Schlick-style energy partition, and it is also the mechanism through which the
+    iridescent color influences the diffuse channel. Second, the combined base-specular and
+    diffuse response is attenuated by $\max(0, 1-F_\text{cc})$, allowing the clearcoat to act
+    as a partial mirror layered above the rest of the material.
+  </p>
+
+  <p>
+    The following material constants are fixed during training:
+    <code>albedo = (1,1,1)</code>,
+    <code>roughness = 0.45</code>,
+    <code>metalness = 0.90</code>,
+    <code>clearcoat = 0.95</code>,
+    <code>η₂ = 1.40</code>,
+    <code>η₃ = 1.05</code>, and
+    <code>d_inc = 1.20</code>. Changing any of these constants changes the target function,
+    so the network must be retrained.
+  </p>
+</div>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 3 — Lobe decomposition">
+      <canvas id="lobes-canvas" class="plot" width="900" height="320"></canvas>
+      <div class="ctrls">
+        <div class="btn-row" id="lobes-toggles">
+          <button class="tog on" data-lobe="0"><span class="swatch s-y"></span>Base specular</button>
+          <button class="tog on" data-lobe="1"><span class="swatch s-g"></span>Diffuse</button>
+          <button class="tog on" data-lobe="2"><span class="swatch s-b"></span>Clearcoat</button>
+          <button class="tog on" data-lobe="3">Sum</button>
+        </div>
+      </div>
+      <div class="caption">The three lobes plotted against $\cos\theta$</div>
+  </div>
+</section>
+
+<!-- §3 THIN-FILM IRIDESCENCE -->
+<section class="section" id="sec-thinfilm">
+<div class="body">
+  <span class="section-num">§ 3 — Thin-film Fresnel</span>
+  <h2>Where the colour comes from</h2>
+
+  <p>
+    The iridescent appearance is not caused by pigment. It comes from optical interference.
+    A thin film of thickness $d_\text{inc}$ and refractive index $\eta_2$ lies on top of a
+    substrate with refractive index $\eta_3$. When light reaches the film, part of it is
+    reflected at the air-film interface, while the rest is transmitted into the film,
+    reflects from the film-substrate interface, and exits back into the air. The transmitted
+    component therefore travels an additional optical path length:
+  </p>
+
+  <div class="eq">
+    $$\Delta = 2\,\eta_2\,d_\text{inc}\,\cos\theta_t$$
+  </div>
+
+  <p>
+    This path difference depends on the refracted angle $\theta_t$. When the reflected
+    wavefronts recombine, they interfere with one another. Wavelengths satisfying
+    $\Delta = m\lambda$ are reinforced, while wavelengths satisfying
+    $\Delta = (m{+}1/2)\lambda$ are attenuated. As the view angle changes from grazing to
+    normal incidence, the optical path difference changes as well, causing the visible colour
+    bands to move through the spectrum.
+  </p>
+
+  <p>
+    Belcour and Barla approximate the spectral integration by fitting the CIE 1931 colour
+    matching functions as sums of Gaussians. This makes the product of the oscillatory
+    interference term and each Gaussian analytically integrable. The result is a closed-form
+    expression for the spectrally integrated Fresnel term, evaluated per RGB channel and
+    summed over a small number of internal-reflection orders, here $m = 0,1,2,3$. Higher-order
+    terms decay geometrically and are neglected.
+  </p>
+
+  <p>
+    The visualization below evaluates this closed-form model using a simplified two-beam
+    approximation. Although this is not the full Belcour series, it has the same qualitative
+    angular structure: reflectance varies with $\cos\theta_v$, and each RGB channel follows
+    a different interference pattern. Adjusting $d_\text{inc}$ shifts the band structure,
+    while changing $\eta_2$ affects both the phase and the amplitude of the response. The
+    network used in this work is trained only for the specific material parameters shown
+    here.
+  </p>
+</div>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 4 — Spectrally-integrated thin-film Fresnel">
+      <canvas id="iri-canvas" class="plot" width="900" height="340"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label>Film thickness <code>d_inc</code> <span class="v" id="v-d">1.20</span></label>
+          <input type="range" id="r-d" min="0.2" max="3.0" step="0.01" value="1.2">
+        </div>
+        <div class="ctrl">
+          <label>Film index <code>η₂</code> <span class="v" id="v-n2">1.40</span></label>
+          <input type="range" id="r-n2" min="1.05" max="2.5" step="0.01" value="1.4">
+        </div>
+        <div class="ctrl">
+          <label>Substrate index <code>η₃</code> <span class="v" id="v-n3">1.05</span></label>
+          <input type="range" id="r-n3" min="1.0" max="2.0" step="0.01" value="1.05">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="iri-reset">Reset to trained</button>
+        </div>
+      </div>
+      <div class="caption"> Reflectance for acording to the $\cos\theta_v$ for R, G, B channels.</div>
+  </div>
+</section>
+
+<!-- §4 MIS -->
+<section class="section" id="sec-mis">
+<div class="body">
+  <span class="section-num">§ 4 — Building targets</span>
+  <h2>Three importance-sampling strategies, balanced</h2>
+
+  <p>
+    Once the Fresnel term includes thin-film interference, the lighting integral in Eq. 1
+    no longer has a practical closed-form solution. We therefore build the supervision targets with
+    Monte Carlo integration. Naive uniform sampling is too noisy for this problem. m
+    Most samples miss
+    the narrow specular features, especially the clearcoat peak. This is the same variance problem
+    that makes the BRDF expensive to render directly.
+  </p>
+
+  <p>
+    To reduce variance, we use multiple importance sampling with the balance heuristic:
+  </p>
+
+  <div class="eq numbered">
+    <div></div>
+    <div>
+      $$\hat L_o =
+      \sum_{k=1}^{K}
+      \frac{1}{N_k}
+      \sum_{s=1}^{N_k}
+      w_k(\boldsymbol{\omega}_{i,s})\,
+      \frac{
+        f\,L_i\,(\mathbf{n}\!\cdot\!\boldsymbol{\omega}_i)
+      }{
+        p_k(\boldsymbol{\omega}_{i,s})
+      },
+      \qquad
+      w_k(\boldsymbol{\omega}) =
+      \frac{
+        N_k\,p_k(\boldsymbol{\omega})
+      }{
+        \sum_j N_j\,p_j(\boldsymbol{\omega})
+      }$$
+    </div>
+    <div class="num">(2)</div>
+  </div>
+
+  <p>
+    We combine three sampling strategies. The first is
+    <span class="swatch s-g"></span>
+    <em>cosine-weighted hemisphere sampling</em>, which targets the diffuse lobe. The second is
+    <span class="swatch s-y"></span>
+    <em>VNDF sampling with $\alpha = 0.20$</em>, which targets the base specular lobe. The third is
+    <span class="swatch s-b"></span>
+    <em>VNDF sampling with $\alpha_\text{cc} = 0.0156$</em>, which targets the near-mirror clearcoat
+    lobe.
+  </p>
+
+  <p>
+    Each strategy places samples where one part of the BRDF contributes most. The balance weight
+    $w_k$ then combines the strategies without double-counting energy. This is important because the
+    strategies overlap strongly near the center of the hemisphere: a direction sampled by the diffuse
+    strategy may also have non-negligible probability under the specular strategies. The balance
+    heuristic accounts for this overlap and keeps the estimator unbiased.
+  </p>
+
+  <p>
+    For each grid point, we use $N_k = 2048$ samples per strategy, or roughly six thousand BRDF
+    evaluations per supervision target. The full dataset contains ten thousand grid points. In
+    practice, this target-building pass takes a few minutes on a single CUDA device and must be
+    repeated whenever the material parameters change.
+  </p>
+</div>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 5 — MIS sample distribution on the hemisphere">
+      <canvas id="mis-canvas" class="plot" width="900" height="340"></canvas>
+      <div class="ctrls">
+        <div class="btn-row" id="mis-toggles">
+          <button class="tog on" data-strat="0"><span class="swatch s-g"></span>Cosine</button>
+          <button class="tog on" data-strat="1"><span class="swatch s-y"></span>VNDF α=0.20</button>
+          <button class="tog on" data-strat="2"><span class="swatch s-b"></span>VNDF α=0.0156</button>
+        </div>
+        <div class="ctrl">
+          <label>cos θ<sub>v</sub> <span class="v" id="v-mis-cos">0.50</span></label>
+          <input type="range" id="r-mis-cos" min="0.05" max="1.0" step="0.01" value="0.5">
+        </div>
+      </div>
+      <div class="caption"> Each strategy projects its samples onto the hemisphere as seen from above. </div>
+  </div>
+</section>
+
+<!-- §5 THE 1D REDUCTION -->
+<section class="section" id="sec-symmetry">
+<div class="body">
+  <span class="section-num">§ 5 — The reduction</span>
+  <h2>Radiance as a function of one scalar</h2>
+
+  <p>
+    This symmetry is what makes the approximation tractable. A sphere is rotationally
+    symmetric, and a uniform white sky is also rotationally symmetric. When the material is
+    isotropic, the converged outgoing radiance at a surface point depends only on the angle
+    between the surface normal and the viewing direction:
+  </p>
+
+  <div class="eq">
+    $$\cos\theta_v \;=\; \mathbf{n}\!\cdot\!\boldsymbol{\omega}_o \;\in\; [0,1]$$
+  </div>
+
+  <p>
+    Rotating $\boldsymbol{\omega}_o$ around $\mathbf{n}$ does not change the lighting, because
+    $L_i$ is constant. It also does not change the BRDF, because an isotropic material has no
+    preferred tangent direction. The integral therefore evaluates to the same value for every
+    outgoing direction with the same $\mathbf{n}\!\cdot\!\boldsymbol{\omega}_o$.
+  </p>
+
+  <p>
+    In other words, although the integrand is written in terms of several three-dimensional
+    directions, the final radiance is not a high-dimensional function under these assumptions.
+    After marginalizing over incident directions, the result can be represented as a scalar
+    function of $\cos\theta_v$.
+  </p>
+
+  <p>
+      We exploit this directly: instead of evaluating the full lighting integral at runtime,
+      we fit a compact scalar function over $\cos\theta_v$.
+    The network is not learning an arbitrary angular BRDF. It is learning the already-integrated
+    radiance profile induced by this specific material and lighting setup.
+  </p>
+
+  <h3>The terminal-ray approximation</h3>
+
+  <p>
+    At render time, this gives a simple approximation strategy. When the path tracer hits the
+    iridescent surface, we evaluate the network and terminate the bounce loop. No secondary
+    ray is traced from that hit point.
+  </p>
+
+  <p>
+    For an isolated sphere under a constant environment, with no occlusion or interreflection,
+    this matches the preintegrated target exactly. In a more general scene, it becomes an
+    approximation: the sphere no longer sees only a uniform sky, and surrounding geometry can
+    alter the incident radiance. In practice, it remains useful when the iridescent object is
+    the dominant reflective element and the rest of the scene is mostly diffuse. The shader is
+    reduced to a primary-ray hit, a scalar lookup or network evaluation, and no recursive
+    material integration.
+  </p>
+</div>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 6 — Rotational symmetry, illustrated">
+      <canvas id="sym-canvas" class="plot" width="900" height="320"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label>Azimuthal angle φ <span class="v" id="v-phi">0°</span></label>
+          <input type="range" id="r-phi" min="0" max="360" step="1" value="0">
+        </div>
+        <div class="ctrl">
+          <label>Polar angle θ_v <span class="v" id="v-theta">60°</span></label>
+          <input type="range" id="r-theta" min="0" max="89" step="1" value="60">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="sym-spin">Auto-spin φ</button>
+        </div>
+      </div>
+      <div class="caption"><b>Fig. 6.</b> Spin $\boldsymbol{\omega}_o$ around $\mathbf{n}$ at fixed $\theta_v$. The sample cloud rotates; the integral does not. The $L_o$ readout is invariant under the azimuthal sweep — proof, by demonstration, that the converged radiance lives in $[0,1]$ rather than on $S^2$.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §6 SPECTRAL BIAS -->
+<section class="section" id="sec-spectral">
+  <div class="body">
+    <span class="section-num">§ 6 — Spectral bias and Fourier features</span>
+    <h2>Why a vanilla MLP cannot fit iridescence.</h2>
+    <p>A plain ReLU MLP, trained on a target with rich frequency content, fits low-frequency components first; the gap to high-frequency content grows exponentially in frequency (Rahaman et al. 2019). For the iridescent target this means the diffuse trend is fit perfectly, the base specular falloff approximately, and the iridescent banding <em>not at all</em>.</p>
+    <p>The fix (Mildenhall et al. 2020 / Tancik et al. 2020) is to lift $\cos\theta_v$ through a deterministic positional encoding before the MLP:</p>
+    <div class="eq">
+      $$\gamma(x) = \big[\,x,\; \sin(\pi x), \cos(\pi x), \sin(2\pi x), \cos(2\pi x),\;\ldots,\; \sin(2^{L-1}\pi x), \cos(2^{L-1}\pi x)\,\big]$$
+    </div>
+    <p>The encoded dimension is $1 + 2L$. Tancik's NTK analysis says training a ReLU MLP on $\gamma(x)$ is equivalent to kernel regression with a kernel whose effective bandwidth is set by the highest frequency in $\gamma$. The MLP itself is no less smooth-biased; what changed is that the <em>coordinate system</em> now contains the high-frequency basis explicitly.</p>
+    <p>The raw $x$ channel is kept alongside the Fourier features so that slowly-varying envelopes — diffuse, clearcoat trends — do not have to be reconstructed from a sum of bandlimited pieces.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">L's role</span>The maximum frequency in $\gamma$ is $2^{L-1}\pi$. Doubling $L$ doubles bandwidth at additive cost in input dimension (and a small additive cost in fc0 width). Cheaper than scaling depth or width to reach the same kernel.</p>
+  </aside>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 7 — Fourier features, live fit">
+      <canvas id="ff-canvas" class="plot" width="900" height="360"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label>Octaves L <span class="v" id="v-L">2</span></label>
+          <input type="range" id="r-L" min="0" max="6" step="1" value="2">
+        </div>
+        <div class="ctrl">
+          <label>Hidden units H <span class="v" id="v-H">7</span></label>
+          <input type="range" id="r-H" min="2" max="16" step="1" value="7">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="ff-train">Re-train</button>
+          <button class="btn" id="ff-step">Step ×100</button>
+        </div>
+        <div class="ctrl" style="flex: 1.5;">
+          <label>Status <span class="v" id="v-ff-status">idle</span></label>
+          <div style="font-family: var(--mono); font-size: 11px; color: var(--ink-soft); margin-top: 4px;">
+            <span id="v-ff-iter">0</span> iters · MSE <span id="v-ff-mse" style="color: var(--accent);">—</span> · params <span id="v-ff-params" style="color: var(--accent);">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Fig. 7.</b> A small MLP (two ReLU hidden layers) trained <em>in your browser</em> via Adam on a synthesised iridescent target. With $L=0$ — no Fourier features at all — even a wide MLP cannot fit the bands. Push $L$ up; the bandwidth of the equivalent NTK kernel rises and the bands snap into place.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §7 THE NETWORK -->
+<section class="section" id="sec-network">
+  <div class="body">
+    <span class="section-num">§ 7 — The network</span>
+    <h2>Two ReLU layers, three matrix multiplies.</h2>
+    <p>Encoded input fed through a depth-2 MLP. Three multiplies, two ReLUs, one non-negative clamp:</p>
+    <div class="eq">
+      $$\begin{aligned}
+      h_0 &= \mathrm{ReLU}(W_0\,\gamma(x) + b_0),\quad W_0 \in \mathbb{R}^{H\times(1+2L)} \\
+      h_1 &= \mathrm{ReLU}(W_1\, h_0 + b_1),\quad W_1 \in \mathbb{R}^{H\times H} \\
+      f_\theta(x) &= \max\!\big(0,\; W_2\, h_1 + b_2\big),\quad W_2 \in \mathbb{R}^{3\times H}
+      \end{aligned}$$
+    </div>
+    <p>Output is clamped to $\ge 0$ — radiance is non-negative — but <em>not</em> to $\le 1$. The integrated radiance is HDR by design (peaks above 1 at grazing angles); the shader's downstream Reinhard tonemap is what compresses it for display. Clamping the network to $[0,1]$ would crush the highlights before they reached the tonemap.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">Why two layers</span>Depth-1 cannot represent the local minima between iridescent bands without absurd width. Depth-3 fits as well as depth-2 here but doubles inference cost. Two is the smallest that suffices.</p>
+  </aside>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 8 — Network architecture, post-search (L*=2, H*=7, 122 params)">
+      <svg viewBox="0 0 920 360" class="diagram" id="net-svg"></svg>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label>cos θ<sub>v</sub> <span class="v" id="v-net-x">0.50</span></label>
+          <input type="range" id="r-net-x" min="0" max="1" step="0.001" value="0.5">
+        </div>
+        <div class="btn-row">
+          <button class="tog on" id="net-show-edges">Edge contribution</button>
+          <button class="btn" id="net-sweep">Sweep cos θ<sub>v</sub></button>
+        </div>
+      </div>
+      <div class="caption"><b>Fig. 8.</b> The deployed network running live in your browser, with the actual trained weights. Drag <code>cos θ_v</code> and watch it propagate: the encoder fires its 5 features, the seven <code>h₀</code> ReLU units integrate, the seven <code>h₁</code> units do the same, and three RGB radiances emerge at the right. Edge thickness is the magnitude of the signal each weight is currently carrying, $|w_{ij}\cdot a_j|$ — green for additive contribution, red for subtractive. Toggle <em>Edge contribution</em> off to see the raw graph; press <em>Sweep</em> to animate $\cos\theta_v$ across the domain.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §8 ARCHITECTURE SEARCH -->
+<section class="section" id="sec-darts">
+  <div class="body">
+    <span class="section-num">§ 8 — How (L, H) chose itself</span>
+    <h2>A DARTS-style continuous relaxation, narrowed to two scalars.</h2>
+    <p>We do not pick $L$ and $H$ by hand. They fall out of a continuous relaxation (Liu et al. 2019) specialised down to two scalar knobs.</p>
+    <p>Build a supernet at maximum capacity ($L_\text{max}=6$, $H_\text{max}=16$, ≈ 600 parameters) and add two vectors of learnable sigmoid gates: $\boldsymbol{\alpha}\in\mathbb{R}^{L_\text{max}}$, one gate per Fourier octave, multiplying its sin/cos pair; and $\boldsymbol{\beta}\in\mathbb{R}^{H_\text{max}}$, one gate per hidden unit, multiplying its post-ReLU activation. The <em>same</em> $\boldsymbol{\beta}$ multiplies both hidden layers, so the layer widths shrink in lock-step (one integer $H$ to ship as a <code>#define</code>). Gates initialise to logit $3$ — $\sigma(3)\approx 0.953$ — so the supernet starts almost fully on; training begins indistinguishable from the dense baseline.</p>
+    <p>The raw $x$ channel is <em>never</em> gated. Dropping it would force the network to reconstruct a constant from a sum of sines.</p>
+    <h3>The loss</h3>
+    <p>MSE plus a differentiable parameter-count proxy:</p>
+    <div class="eq">
+      $$\mathcal{L}(\theta,\boldsymbol{\alpha},\boldsymbol{\beta}) = \mathbb{E}_x\,\big\|f_\theta^g(x)-\hat L_o^\text{shader}(x)\big\|^2 \;+\; \lambda\,\frac{\text{proxy}(\boldsymbol{\alpha},\boldsymbol{\beta})}{\text{proxy}_\text{max}}$$
+    </div>
+    <div class="eq">
+      $$\text{proxy} = \big(2 + 2\textstyle\sum_k \sigma(\alpha_k)\big)\bar H + \bar H^2 + \bar H + 3\bar H + 3,\qquad \bar H=\textstyle\sum_j \sigma(\beta_j)$$
+    </div>
+    <p>The proxy is the closed-form parameter count of the MLP with $L$ and $H$ replaced by their gate-weighted continuous analogues. It is differentiable, recovers the integer count exactly when every gate is binary, and its gradient with respect to each $\beta$ grows linearly in $\bar H$ — so the $n$-th unit costs more than the first. Both pulls go toward zero; only gates whose absence would meaningfully raise MSE resist.</p>
+    <h3>The λ ramp</h3>
+    <p>Setting $\lambda=10^{-3}$ from epoch zero collapses everything before the MLP has learned anything to defend. Instead $\lambda$ is held at zero for the first 20% of training, then linearly ramped to $10^{-3}$ by the 50% mark, then held. First 20% — clean fit at full capacity. Next 30% — increasing pressure to shed weight. Final 50% — consolidation under steady pressure.</p>
+    <p>After training, threshold each gate at 0.5: keep above, drop below. Result on this problem: $L^*=2$, $H^*=7$, 122 parameters. Twenty-two gates shed.</p>
+    <h3>Why retrain</h3>
+    <p>Critically, the gated supernet at the end of search is <em>not</em> equivalent to a clean MLP at $(L^*, H^*)$. Surviving gates are $\sigma(\beta)\approx 0.95$, not exactly 1. The "dropped" weight columns still exist, multiplied by ≈ 0, carrying whatever noise they absorbed during training. So we discard the supernet and retrain a clean ungated MLP at $(L^*, H^*)$ with the same data, optimiser and schedule. Final MSE matches the over-parameterised baseline within noise.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">λ sensitivity</span>The chosen $10^{-3}$ is in the small range where MSE-gradient and proxy-gradient on the gates are comparable in the first epoch after the ramp completes. Outside that range one term wins and the search becomes degenerate — either no shedding, or total collapse.</p>
+    <p><span class="label">Same β for both layers</span>Otherwise we ship two integers $H_0, H_1$. With one $\boldsymbol{\beta}$ the network is forced to commit to a single width; the search is more decisive and the runtime smaller.</p>
+  </aside>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 9 — Architecture-search animation">
+      <canvas id="darts-canvas" class="plot" width="900" height="380"></canvas>
+      <div class="ctrls">
+        <div class="ctrl" style="flex: 2;">
+          <label>Epoch <span class="v" id="v-darts-ep">0</span> / 2000</label>
+          <input type="range" id="r-darts-ep" min="0" max="2000" step="1" value="0">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="darts-play">Play search</button>
+          <button class="btn" id="darts-reset">Reset</button>
+        </div>
+      </div>
+      <div class="caption"><b>Fig. 9.</b> Training trajectory of the gated supernet. Top strip: each Fourier-octave gate $\sigma(\alpha_k)$ over time. Bottom strip: each hidden-unit gate $\sigma(\beta_j)$. The red ramp marks $\lambda$. Watch the high octaves (4, 5) and surplus units fall through the 0.5 threshold; what remains above the line at the end is the deployed network.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §9 GLSL -->
+<section class="section" id="sec-glsl">
+  <div class="body">
+    <span class="section-num">§ 9 — Inference</span>
+    <h2>Twelve lines of GLSL.</h2>
+    <p>The trained weights are emitted as <code>const float[]</code> blocks beside an encoder and a forward pass. In a fragment shader, the entire iridescent BRDF branch becomes one call to <code>neuralIridescence(dot(N, -V))</code> and a <code>break</code>. Everything else — ray-sphere intersection, environment lookup, tonemap — is untouched.</p>
+
+<pre class="code" data-lang="GLSL"><span class="c">// γ : R → R^(1+2L)</span>
+<span class="k">void</span> nrEncode(<span class="k">float</span> x, <span class="k">out float</span> feat[NR_IN]) {
+    feat[<span class="n">0</span>] = x;
+    <span class="k">for</span> (<span class="k">int</span> k = <span class="n">0</span>; k &lt; NR_L; k++) {
+        <span class="k">float</span> a = x * <span class="n">3.14159265</span> * exp2(<span class="k">float</span>(k));
+        feat[<span class="n">1</span> + k]        = sin(a);
+        feat[<span class="n">1</span> + NR_L + k] = cos(a);
+    }
+}
+
+<span class="c">// f_θ : R → R^3, non-negative</span>
+<span class="t">vec3</span> neuralIridescence(<span class="k">float</span> cosThetaV) {
+    <span class="k">float</span> feat[NR_IN]; nrEncode(cosThetaV, feat);
+    <span class="k">float</span> h0[NR_H];
+    <span class="k">for</span> (<span class="k">int</span> i = <span class="n">0</span>; i &lt; NR_H; i++) {
+        <span class="k">float</span> s = NR_B0[i];
+        <span class="k">for</span> (<span class="k">int</span> j = <span class="n">0</span>; j &lt; NR_IN; j++) s += NR_W0[i*NR_IN + j] * feat[j];
+        h0[i] = max(<span class="n">0.0</span>, s);
+    }
+    <span class="c">// ... h1 (NR_H×NR_H), output (3×NR_H), return clamp(out, 0.0, +inf)</span>
+}</pre>
+
+    <p>With <code>NR_IN = 1+2L = 5</code>, <code>NR_H = 7</code>, <code>NR_OUT = 3</code>, the per-pixel cost is exact:</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">Why scalar arrays</span>We tried <code>vec4</code>-packed weights for SIMD. The compiler already vectorises the unrolled scalar loop; <code>vec4</code> indexing cost more than it saved. Plain <code>float[]</code> with <code>#define</code>'d dimensions lets the compiler unroll cleanly and place constants in uniform memory or as immediates.</p>
+  </aside>
+
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 10 — Per-pixel cost breakdown (counted exactly)">
+      <table style="width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--rule);">
+            <th style="text-align: left; padding: 10px 12px; color: var(--ink-faint); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px;">Stage</th>
+            <th style="text-align: right; padding: 10px 12px; color: var(--ink-faint); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px;">MADs</th>
+            <th style="text-align: right; padding: 10px 12px; color: var(--ink-faint); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px;">max</th>
+            <th style="text-align: right; padding: 10px 12px; color: var(--ink-faint); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px;">transcendentals</th>
+            <th style="text-align: left; padding: 10px 12px; color: var(--ink-faint); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px;">remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--rule-soft);">
+            <td style="padding: 10px 12px; color: var(--ink);">encoder γ</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">—</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">—</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">2 sin · 2 cos · 1 exp2</td>
+            <td style="padding: 10px 12px; color: var(--ink-soft);">L = 2 octaves</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--rule-soft);">
+            <td style="padding: 10px 12px; color: var(--ink);">fc0 : 5 → 7</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">42</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">7</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--ink-faint);">—</td>
+            <td style="padding: 10px 12px; color: var(--ink-soft);">5·7 + 7 biases</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--rule-soft);">
+            <td style="padding: 10px 12px; color: var(--ink);">fc1 : 7 → 7</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">56</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">7</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--ink-faint);">—</td>
+            <td style="padding: 10px 12px; color: var(--ink-soft);">7·7 + 7 biases</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--rule-soft);">
+            <td style="padding: 10px 12px; color: var(--ink);">fc2 : 7 → 3</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">24</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--accent);">3</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--ink-faint);">—</td>
+            <td style="padding: 10px 12px; color: var(--ink-soft);">7·3 + 3 biases · final clamp</td>
+          </tr>
+          <tr style="border-top: 1px solid var(--rule);">
+            <td style="padding: 12px; color: var(--ink); font-weight: 600;">Total</td>
+            <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">122</td>
+            <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">17</td>
+            <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">4</td>
+            <td style="padding: 12px; color: var(--ink-soft); font-style: italic;">= parameter count</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="caption"><b>Fig. 10.</b> Per-pixel inference cost. The MAD count equals the parameter count exactly — as expected of a pure MLP. The four transcendentals come from a single <code>exp2</code> in the loop unroll plus two <code>sin</code>/<code>cos</code> pairs.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §10 RESIDUALS -->
+<section class="section" id="sec-residuals">
+  <div class="body">
+    <span class="section-num">§ 10 — Where error concentrates</span>
+    <h2>The residual is local, not visible.</h2>
+    <p>Two regions account for nearly all the residual MSE:</p>
+    <ul>
+      <li><strong>$\cos\theta_v \approx 0$ (grazing).</strong> The iridescent specular peak is at its sharpest. The $L=2$ basis tops out at frequency $4\pi$ and can separate the dominant bands but not fit them with vanishing residual.</li>
+      <li><strong>$\cos\theta_v \approx 0.5$.</strong> The $m=2$ multi-bounce term in the iridescent Fresnel crosses zero with a high derivative — a brief sharp colour transition that the network smooths slightly.</li>
+    </ul>
+    <p>Both residuals are $O(10^{-3})$ MSE and not visible on the rendered sphere. Per channel, blue typically converges slightly faster than red and green, because at $d_\text{inc}=1.20$, $\eta_2=1.40$ the blue band lives in a flat region of the CIE-1931 sensitivity, while red and green sit on steeper portions that depend more on the higher-order $C_m$ coefficients.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">Could L=3 fix it</span>Yes. It also ships an extra octave (4 more weights into fc0) and shaves about $5\times 10^{-4}$ off the MSE in the grazing region. Below the noise floor of the supervision target. Not worth the parameters.</p>
+  </aside>
+  <div class="full">
+    <div class="specimen" data-fig="Fig. 11 — Final radiance L(cos θ_v), RGB">
+      <canvas id="final-canvas" class="plot" width="900" height="360"></canvas>
+      <div class="ctrls">
+        <div class="ctrl">
+          <label>Probe cos θ<sub>v</sub> <span class="v" id="v-probe">0.50</span></label>
+          <input type="range" id="r-probe" min="0" max="1" step="0.001" value="0.5">
+        </div>
+        <div class="btn-row">
+          <button class="tog on" data-curve="ref">JS reference</button>
+          <button class="tog on" data-curve="net">Deployed net</button>
+          <button class="tog" data-curve="res">Residual ×100</button>
+        </div>
+      </div>
+      <div class="caption"><b>Fig. 11.</b> The deployed 122-parameter network, evaluated <em>verbatim from the trained weights</em> in your browser. Solid traces — the network's R, G, B output. Faint dashed traces — the toy JS BRDF from §2, drawn for envelope comparison only (the network was trained against the real shader's biased estimator, not this reproduction; the curves agree on overall shape but disagree in detail at iridescent peaks). Drag the probe to read off values. Toggle <em>Residual×100</em> to see the network minus the JS toy reference scaled up by a hundred — the bulk of the disagreement is the iridescent banding the JS toy never had.</div>
+    </div>
+  </div>
+</section>
+
+<!-- §11 LIMITS -->
+<section class="section" id="sec-limits">
+  <div class="body">
+    <span class="section-num">§ 11 — Limits</span>
+    <h2>What is baked in.</h2>
+    <p>The network trades flexibility for size. Four things are constants of training, not inputs:</p>
+    <ul>
+      <li><strong>Material.</strong> Every coefficient — roughness, metalness, clearcoat, $\eta_2$, $\eta_3$, $d_\text{inc}$, both $\eta_1$, albedo — is baked. Change any and the network must be retrained.</li>
+      <li><strong>Lighting.</strong> Trained against a uniform white sky. A different env map, even one with a sun, breaks the rotational-symmetry assumption that justified the 1D input.</li>
+      <li><strong>Scene.</strong> Terminal-ray treatment is exact only for an isolated sphere. Adds bounded approximation error in scenes with multiple iridescent objects or strong inter-object reflections.</li>
+      <li><strong>Domain.</strong> Trained on $\cos\theta_v \in [0,1]$. Defensive <code>clamp(x, 0, 1)</code> at the call site is enough; the output clamp keeps the result non-negative.</li>
+    </ul>
+    <p>The right way to read those constraints: the radiance net is not a general iridescent material. It is a <em>compiled cache</em> of one specific iridescent material under one specific sky on one specific object. The compiler is the training run.</p>
+    <h3>Why not condition on the BRDF parameters?</h3>
+    <p>The obvious extension is to feed $(\eta_2, d_\text{inc}, \alpha, \dots)$ into the network alongside $\cos\theta_v$, training one general model that responds to material sliders at runtime. I considered it and chose not to. The reason is that iridescence is, in the parameter space, an extraordinarily high-frequency function: nudge $d_\text{inc}$ by a few percent and the colour bands slide across the visible spectrum, swap order, sometimes invert. The 1D slice along $\cos\theta_v$ that this network compresses is already near the limit of what $L=2$ Fourier features and seven hidden units can resolve cleanly; lifting the same surface into a 4- or 5-dimensional input would multiply the required Fourier basis, the supervision grid (10 000 points along one axis becomes millions across several), and the training compute. The resulting network would be tens of kilobytes of weights rather than 122 floats, and the inference cost in MADs would scale with the increased width.</p>
+    <p>Shadertoy fragment shaders have a tight envelope — uniform storage budget, source-length limits, single-pass compilation, and the social expectation that the whole thing fits in one tab. The 122-parameter, twelve-line network meets that envelope; a conditional one would not. So I baked the parameters and left the door open: when the budget is bigger (a desktop renderer, a game engine), conditioning on $(d_\text{inc}, \eta_2)$ first is the natural step, and the same DARTS pipeline applies — it would just choose larger $L^*$ and $H^*$.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">Generalising</span>Conditioning the network on $(d_\text{inc}, \eta_2)$ would bring iridescent-thickness sliders back at the cost of a wider input and a larger network. We did not. The cost-budget for this project was unconditional throughput, and the Shadertoy envelope.</p>
+  </aside>
+</section>
+
+<!-- RELATED SHADERS -->
+<section class="section" id="sec-shaders">
+  <div class="body">
+    <span class="section-num">§ 12 — Related shaders</span>
+    <h2>What this replaces, and what came before.</h2>
+    <p>The network compresses what was originally a Monte Carlo path tracer running entirely in a fragment shader. Both originals are below — published on Shadertoy and embedded live. They render the same iridescent sphere under the same uniform white sky, but evaluate the BRDF analytically with hundreds to thousands of samples per pixel rather than calling a 122-parameter MLP once.</p>
+
+    <div class="specimen" data-fig="Fig. 12 — Original analytic path tracer (the &quot;OG shader&quot;)">
+      <div class="shadertoy-wrap">
+        <iframe src="https://www.shadertoy.com/embed/wX2yRm?gui=true&t=10&paused=false&muted=true" frameborder="0" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="caption"><b>Fig. 12.</b> The original analytic shader (Shadertoy <code>wX2yRm</code>) — full microfacet BRDF with thin-film Fresnel, three-strategy MIS, and a uniform white sky, all in a fragment shader. This is the converged image the network was trained to match. Each pixel here pays for thousands of BRDF evaluations; the network in Fig. 1 pays for one.</div>
+    </div>
+
+    <div class="specimen" data-fig="Fig. 13 — Earlier iridescence shader">
+      <div class="shadertoy-wrap">
+        <iframe src="https://www.shadertoy.com/embed/7cSXWV?gui=true&t=10&paused=false&muted=true" frameborder="0" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="caption"><b>Fig. 13.</b> An earlier shader (Shadertoy <code>7cSXWV</code>) exploring the same thin-film material under different conditions — included here as context for how the look was developed before the path tracer of Fig. 12 was built around it.</div>
+    </div>
+
+    <p>Open either embed in a new tab to step through the source. The contrast in line count is direct: <em>several hundred lines</em> of microfacet, MIS, and tonemap in the originals versus the <em>twelve-line</em> forward pass shipped in §9.</p>
+  </div>
+  <aside class="gutter">
+    <p><span class="label">Why train, not export</span>Shadertoy's path tracer hits its quality plateau in tens of seconds of accumulation. The neural cache hits the same plateau in one frame, every frame, on integrated GPUs.</p>
+  </aside>
+</section>
+
+<!-- BIBLIOGRAPHY -->
+<section class="section" id="sec-bib">
+  <div class="body">
+    <span class="section-num">§ 12 — Reading list</span>
+    <h2>The canon for this project.</h2>
+    <div class="biblio">
+      <div class="entry"><span class="auth">Walter, Marschner, Li & Torrance.</span><span class="yr">2007</span>Microfacet models for refraction through rough surfaces. <em>EGSR</em>. — GGX D.</div>
+      <div class="entry"><span class="auth">Heitz.</span><span class="yr">2014</span>Understanding the masking-shadowing function in microfacet-based BRDFs. <em>JCGT</em>. — Smith correlated V; VNDF.</div>
+      <div class="entry"><span class="auth">Burley.</span><span class="yr">2012</span>Physically-based shading at Disney. <em>SIGGRAPH course</em>. — Disney diffuse.</div>
+      <div class="entry"><span class="auth">Belcour & Barla.</span><span class="yr">2017</span>A practical extension to microfacet theory for the modeling of varying iridescence. <em>SIGGRAPH</em>. — closed-form thin-film.</div>
+      <div class="entry"><span class="auth">Veach & Guibas.</span><span class="yr">1995</span>Optimally combining sampling techniques for Monte Carlo rendering. <em>SIGGRAPH</em>. — MIS, balance heuristic.</div>
+      <div class="entry"><span class="auth">Mildenhall, Srinivasan, Tancik, et al.</span><span class="yr">2020</span>NeRF: Representing scenes as neural radiance fields for view synthesis. <em>ECCV</em>. — γ.</div>
+      <div class="entry"><span class="auth">Tancik, Srinivasan, Mildenhall, et al.</span><span class="yr">2020</span>Fourier features let networks learn high-frequency functions in low-dimensional domains. <em>NeurIPS</em>. — NTK justification.</div>
+      <div class="entry"><span class="auth">Rahaman, Baratin, Arpit, et al.</span><span class="yr">2019</span>On the spectral bias of neural networks. <em>ICML</em>.</div>
+      <div class="entry"><span class="auth">Liu, Simonyan & Yang.</span><span class="yr">2019</span>DARTS: Differentiable architecture search. <em>ICLR</em>.</div>
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  <span>Neural Radiance · Iridescent Sphere</span>
+  <span>122 Parameters · 4 Transcendentals</span>
+  <span>Fit in browser · Rendered in WebGL</span>
+</div>
+
+</div> <!-- /page -->
+
+<script>
+/* ============================================================
+   The deployed neural radiance network — used by hero shader,
+   Fig 7 (live activations) and Fig 10 (final radiance plot).
+   Weights from training/train_neural_radiance.py, verbatim.
+   Architecture: 5 → 7 (ReLU) → 7 (ReLU) → 3 (clamp ≥ 0)
+   ============================================================ */
+const NR = (function(){
+  const L = 2, H = 7, IN = 1 + 2*L, OUT = 3;
+
+  const W0 = new Float32Array([
+    -6.90640286e-02,  3.98222536e-01, -5.61596334e-01, -1.31516844e-01, -6.86723217e-02,
+     3.39485079e-01,  2.73980528e-01,  4.38222349e-01, -6.60618544e-02,  2.52360165e-01,
+    -1.63779780e-01, -2.16903955e-01, -4.64343160e-01, -5.29453635e-01, -9.74778906e-02,
+     2.21378841e-02,  3.49828094e-01,  5.65975666e-01, -1.50419444e-01, -2.14058474e-01,
+     2.52322823e-01,  5.20892084e-01,  1.34365797e-01,  4.22642261e-01,  9.12939012e-02,
+    -3.48462276e-02,  4.39405918e-01, -3.28216761e-01, -8.54321644e-02,  1.20291330e-01,
+     3.05827595e-02,  5.59671700e-01,  8.31943676e-02,  1.53019518e-01, -3.55811864e-01
+  ]);
+  const B0 = new Float32Array([
+    -3.75430405e-01, -2.38983914e-01,  2.81446576e-01,  2.27803543e-01,  3.08033496e-01,
+    -1.86985526e-02,  1.24888226e-01
+  ]);
+  const W1 = new Float32Array([
+    -1.87403392e-02, -4.33519572e-01, -3.46725434e-01, -2.32418448e-01,  1.91405818e-01,
+     1.45550087e-01, -1.66024595e-01, -2.90624648e-01,  4.11094725e-01,  3.67575228e-01,
+     6.89556152e-02, -2.45289765e-02,  2.53801882e-01, -2.68410951e-01,  1.78010985e-01,
+    -7.58507773e-02, -1.93284899e-01,  5.48654944e-02,  4.08086717e-01,  2.48710722e-01,
+    -1.64491937e-01,  2.99661875e-01,  2.87444502e-01, -1.22027859e-01,  4.20410663e-01,
+     4.16267335e-01,  2.50143856e-01,  2.94222385e-01, -1.73067719e-01,  5.26772797e-01,
+    -3.24547961e-02,  2.59457827e-01,  3.13304901e-01,  4.24165517e-01, -1.95339397e-01,
+    -3.76000166e-01, -4.30930071e-02, -3.19186032e-01, -4.24246669e-01,  2.74957120e-01,
+     2.12016389e-01, -4.56226766e-01, -7.25091770e-02,  3.55032951e-01, -1.72956795e-01,
+     2.59441346e-01,  1.76819429e-01, -2.74908599e-02, -3.06714386e-01
+  ]);
+  const B1 = new Float32Array([
+     1.16258003e-01,  1.75606951e-01,  3.30465376e-01, -8.15637261e-02, -2.87470847e-01,
+     8.83697048e-02,  2.57695973e-01
+  ]);
+  const W2 = new Float32Array([
+    -1.41156435e-01, -1.26453847e-01,  5.83441377e-01,  4.38063741e-01,  1.62314147e-01,
+     6.96972106e-03, -2.43782252e-01,  7.62095824e-02, -6.50905222e-02,  6.61346177e-03,
+     2.18203217e-01,  1.91822216e-01, -1.06748447e-01,  5.04063666e-01, -2.14483306e-01,
+     5.18594265e-01,  4.97712910e-01, -1.10511735e-01,  2.38481313e-01,  5.36436997e-02,
+     1.55780107e-01
+  ]);
+  const B2 = new Float32Array([
+     2.41518065e-01,  3.62542868e-01,  2.05402017e-01
+  ]);
+
+  function encode(x){
+    const f = new Float32Array(IN);
+    f[0] = x;
+    for (let k = 0; k < L; k++){
+      const a = x * Math.PI * Math.pow(2, k);
+      f[1 + k]     = Math.sin(a);
+      f[1 + L + k] = Math.cos(a);
+    }
+    return f;
+  }
+
+  function forward(x){
+    const f = encode(x);
+    const h0 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = B0[i];
+      for (let j = 0; j < IN; j++) s += W0[i*IN + j] * f[j];
+      h0[i] = Math.max(0, s);
+    }
+    const h1 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = B1[i];
+      for (let j = 0; j < H; j++) s += W1[i*H + j] * h0[j];
+      h1[i] = Math.max(0, s);
+    }
+    const o = new Float32Array(OUT);
+    for (let r = 0; r < OUT; r++){
+      let s = B2[r];
+      for (let i = 0; i < H; i++) s += W2[r*H + i] * h1[i];
+      o[r] = Math.max(0, s);
+    }
+    return o;
+  }
+
+  // Like forward(), but returns every intermediate value (pre- and post-ReLU)
+  // so a UI can show what's happening inside the network.
+  function forwardWithActivations(x){
+    const feat = encode(x);
+    const z0 = new Float32Array(H), h0 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = B0[i];
+      for (let j = 0; j < IN; j++) s += W0[i*IN + j] * feat[j];
+      z0[i] = s; h0[i] = Math.max(0, s);
+    }
+    const z1 = new Float32Array(H), h1 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = B1[i];
+      for (let j = 0; j < H; j++) s += W1[i*H + j] * h0[j];
+      z1[i] = s; h1[i] = Math.max(0, s);
+    }
+    const z2 = new Float32Array(OUT), out = new Float32Array(OUT);
+    for (let r = 0; r < OUT; r++){
+      let s = B2[r];
+      for (let i = 0; i < H; i++) s += W2[r*H + i] * h1[i];
+      z2[r] = s; out[r] = Math.max(0, s);
+    }
+    return { feat, z0, h0, z1, h1, z2, out };
+  }
+
+  return {
+    L, H, IN, OUT,
+    W0, B0, W1, B1, W2, B2,
+    encode, forward, forwardWithActivations
+  };
+})();
+</script>
+
+<script>
+/* ============================================================
+   1. HERO SPHERE — WebGL fragment shader running the ACTUAL
+   trained 122-parameter neural network. Weights are uploaded
+   as uniform float arrays from the NR module above; the GLSL
+   forward pass mirrors what ships in the production shader.
+   ============================================================ */
+(function(){
+  const canvas = document.getElementById('hero-sphere');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Wait for NR to be defined (it should be, since this script comes after).
+  const gl = canvas.getContext('webgl', { antialias: true, premultipliedAlpha: true });
+  if (!gl) {
+    canvas.style.background = 'radial-gradient(circle at 35% 30%, #ff5b9b, #6ce39a 30%, #4dc7ff 60%, #b78bff 100%)';
+    return;
+  }
+
+  const vs = `
+    attribute vec2 a_pos;
+    varying vec2 v_uv;
+    void main(){ v_uv = a_pos; gl_Position = vec4(a_pos, 0., 1.); }
+  `;
+
+  // Fragment shader: identical structure to the production GLSL.
+  // Weights are uniform float[] arrays uploaded from JS.
+  const fs = `
+    precision highp float;
+    varying vec2 v_uv;
+    uniform float u_time;
+    uniform vec2 u_pointer;
+    uniform float u_w0[35]; // 7x5 row-major (i*5+j)
+    uniform float u_b0[7];
+    uniform float u_w1[49]; // 7x7 row-major (i*7+j)
+    uniform float u_b1[7];
+    uniform float u_w2[21]; // 3x7 row-major (r*7+j)
+    uniform float u_b2[3];
+
+    const float PI = 3.14159265358979;
+
+    // γ : R → R^5 — the same encoder shipped in the production shader.
+    void nrEncode(float x, out float feat[5]) {
+      feat[0] = x;
+      feat[1] = sin(PI * x);
+      feat[2] = sin(PI * 2.0 * x);
+      feat[3] = cos(PI * x);
+      feat[4] = cos(PI * 2.0 * x);
+    }
+
+    // f_θ : R → R^3, non-negative — the deployed 122-parameter MLP.
+    vec3 neuralIridescence(float cosThetaV) {
+      float feat[5];
+      nrEncode(cosThetaV, feat);
+
+      float h0[7];
+      for (int i = 0; i < 7; i++) {
+        float s = u_b0[i];
+        for (int j = 0; j < 5; j++) s += u_w0[i*5 + j] * feat[j];
+        h0[i] = max(0.0, s);
+      }
+
+      float h1[7];
+      for (int i = 0; i < 7; i++) {
+        float s = u_b1[i];
+        for (int j = 0; j < 7; j++) s += u_w1[i*7 + j] * h0[j];
+        h1[i] = max(0.0, s);
+      }
+
+      // fc2 unrolled across the 3 RGB outputs
+      vec3 o;
+      float s0 = u_b2[0]; for (int j = 0; j < 7; j++) s0 += u_w2[0*7 + j] * h1[j];
+      float s1 = u_b2[1]; for (int j = 0; j < 7; j++) s1 += u_w2[1*7 + j] * h1[j];
+      float s2 = u_b2[2]; for (int j = 0; j < 7; j++) s2 += u_w2[2*7 + j] * h1[j];
+      o.r = max(0.0, s0);
+      o.g = max(0.0, s1);
+      o.b = max(0.0, s2);
+      return o;
+    }
+
+    void main(){
+      vec2 uv = v_uv;
+      float r2 = dot(uv, uv);
+      if (r2 > 1.0) { gl_FragColor = vec4(0.); return; }
+
+      vec3 N = normalize(vec3(uv.x, uv.y, sqrt(1.0 - r2)));
+
+      // pointer-driven tilt
+      float px = (u_pointer.x - 0.5) * 0.6;
+      float py = (u_pointer.y - 0.5) * 0.6;
+      mat2 Rx = mat2(cos(px), -sin(px), sin(px), cos(px));
+      mat2 Ry = mat2(cos(py), -sin(py), sin(py), cos(py));
+      N.xz = Rx * N.xz;
+      N.yz = Ry * N.yz;
+
+      vec3 V = vec3(0., 0., 1.);
+      float cosThetaV = clamp(dot(N, V), 0.0, 1.0);
+
+      // === The whole iridescent BRDF, in one call ===
+      vec3 Lo = neuralIridescence(cosThetaV);
+
+      // Reinhard tonemap, gentle gamma
+      float edge = smoothstep(1.0, 0.985, sqrt(r2));
+      vec3 col = Lo / (0.5 + Lo);
+
+      gl_FragColor = vec4(col * edge, edge);
+    }
+  `;
+
+  function compile(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error('shader:', gl.getShaderInfoLog(s));
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error('link:', gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+
+  // upload the network's weights — once, as uniforms
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_w0'), NR.W0);
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_b0'), NR.B0);
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_w1'), NR.W1);
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_b1'), NR.B1);
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_w2'), NR.W2);
+  gl.uniform1fv(gl.getUniformLocation(prog, 'u_b2'), NR.B2);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const aPos = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uPointer = gl.getUniformLocation(prog, 'u_pointer');
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+  let pointer = [0.5, 0.5];
+  canvas.addEventListener('pointermove', (e)=>{
+    const r = canvas.getBoundingClientRect();
+    pointer = [(e.clientX - r.left)/r.width, 1.0 - (e.clientY - r.top)/r.height];
+  });
+
+  const t0 = performance.now();
+  function frame(){
+    gl.viewport(0,0,canvas.width,canvas.height);
+    gl.uniform1f(uTime, (performance.now()-t0)/1000);
+    gl.uniform2f(uPointer, pointer[0], pointer[1]);
+    gl.clearColor(0,0,0,0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<script>
+/* ============================================================
+   Shared BRDF math + plotting helpers
+   ============================================================ */
+const BRDF = (function(){
+  const ETA1 = 1.1, ETA2 = 1.40, ETA3 = 1.05, DINC = 1.20;
+  function thinFilmRGB(cosI, opts){
+    const o = Object.assign({eta1:ETA1, eta2:ETA2, eta3:ETA3, d:DINC}, opts||{});
+    const sinI2 = Math.max(0, 1 - cosI*cosI);
+    const sinT2 = (o.eta1*o.eta1/(o.eta2*o.eta2)) * sinI2;
+    const cosT = Math.sqrt(Math.max(0, 1 - sinT2));
+    const opd = 2 * o.eta2 * o.d * cosT;
+    const lam = [0.680, 0.550, 0.440];
+    const F0 = ((o.eta1-o.eta3)/(o.eta1+o.eta3))**2;
+    const fr = F0 + (1 - F0) * Math.pow(1 - cosI, 5);
+    return lam.map((L,i)=>{
+      const ph = 2*Math.PI*opd/L;
+      const m1 = 0.5 + 0.5*Math.cos(ph);
+      const m2 = 0.18*(0.5 + 0.5*Math.cos(2*ph + 0.4));
+      return fr * (0.55 + 0.7*m1 - 0.15*m2);
+    });
+  }
+  function clearcoat(cosI){
+    const F0 = ((1-1.5)/(1+1.5))**2;
+    return F0 + (1-F0)*Math.pow(1-cosI, 5);
+  }
+  function lobes(cosThetaV, opts){
+    const F = thinFilmRGB(cosThetaV, opts);
+    const specEnv = 0.18 + 0.6*Math.pow(cosThetaV, 0.6);
+    const baseSpec = F.map(f => f * specEnv);
+    const diff = F.map(f => (1-f)*0.10 * (0.6 + 0.4*cosThetaV));
+    const Fc = clearcoat(cosThetaV);
+    const ccEnv = Math.pow(1 - cosThetaV, 1.4) * 0.95 + 0.10;
+    const cc = [Fc*ccEnv*1.5, Fc*ccEnv*1.5, Fc*ccEnv*1.5];
+    const sum = baseSpec.map((b,i)=> (b + diff[i])*(1 - Fc) + cc[i]);
+    return { baseSpec, diff, cc, sum, F };
+  }
+  return { thinFilmRGB, clearcoat, lobes };
+})();
+
+const Plot = (function(){
+  // Per-canvas metadata: bitmap dimensions and a "needs-resize" flag.
+  // We use a WeakMap so canvases can be GC'd normally, and a ResizeObserver
+  // to flip the dirty flag ONLY when a canvas's CSS box has actually been
+  // re-laid-out — never during a slider tick. ctx2() during a redraw becomes
+  // a cheap pass-through that just sets the dpr transform; the bitmap is
+  // only resized on first paint and on real layout events. This kills the
+  // feedback loop where draw() resized the bitmap, layout read the new
+  // intrinsic aspect ratio, the box drifted by a fraction of a pixel, and
+  // the cycle repeated.
+  const meta = new WeakMap();
+  let ro = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const m = meta.get(e.target);
+        if (m) m.dirty = true;
+      }
+    });
+  }
+
+  function ensureMeta(canvas){
+    let m = meta.get(canvas);
+    if (m) return m;
+    // Pin the CSS aspect ratio from the canvas's authored width/height
+    // attributes ONCE. The browser would normally derive an intrinsic ratio
+    // from those attributes, but when JS later rewrites canvas.width /
+    // canvas.height for the dpr-scaled bitmap, that intrinsic ratio shifts
+    // by sub-pixel amounts and layout drifts. Setting an explicit inline
+    // aspect-ratio severs that link.
+    const aw = canvas.getAttribute('width');
+    const ah = canvas.getAttribute('height');
+    if (aw && ah && !canvas.style.aspectRatio) {
+      canvas.style.aspectRatio = `${aw} / ${ah}`;
+    }
+    m = { dirty: true, w: 0, h: 0 };
+    meta.set(canvas, m);
+    if (ro) ro.observe(canvas);
+    return m;
+  }
+
+  function ctx2(canvas){
+    const m = ensureMeta(canvas);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (m.dirty) {
+      const r = canvas.getBoundingClientRect();
+      // floor not round — guarantees the bitmap is never larger than the
+      // box, so writing the dimensions cannot push layout outward.
+      const wantW = Math.max(1, Math.floor(r.width  * dpr));
+      const wantH = Math.max(1, Math.floor(r.height * dpr));
+      canvas.width  = wantW;
+      canvas.height = wantH;
+      m.w = r.width;
+      m.h = r.height;
+      m.dirty = false;
+    }
+    const c = canvas.getContext('2d');
+    // Reset to identity, then apply the dpr scale once. setTransform()
+    // doesn't compose, so repeated draws can't drift either.
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.imageSmoothingEnabled = true;
+    return { c, w: m.w, h: m.h };
+  }
+  function axes(c, x0, y0, w, h, xRange, yRange, opts){
+    opts = opts || {};
+    const xticks = opts.xticks || 5;
+    const yticks = opts.yticks || 5;
+    c.save();
+    c.fillStyle = opts.bg || 'rgba(255,255,255,0.01)';
+    c.fillRect(x0, y0, w, h);
+    c.strokeStyle = '#2a2a35';
+    c.lineWidth = 0.5;
+    c.font = '10px JetBrains Mono, monospace';
+    c.fillStyle = '#6c6759';
+    c.textAlign = 'center';
+    for (let i = 0; i <= xticks; i++){
+      const t = i / xticks;
+      const x = x0 + t*w;
+      c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y0+h); c.stroke();
+      const v = xRange[0] + t*(xRange[1]-xRange[0]);
+      c.fillText(v.toFixed(opts.xprec ?? 1), x, y0+h+12);
+    }
+    c.textAlign = 'right';
+    for (let i = 0; i <= yticks; i++){
+      const t = i / yticks;
+      const y = y0 + h - t*h;
+      c.beginPath(); c.moveTo(x0, y); c.lineTo(x0+w, y); c.stroke();
+      const v = yRange[0] + t*(yRange[1]-yRange[0]);
+      c.fillText(v.toFixed(opts.yprec ?? 1), x0-6, y+3);
+    }
+    c.strokeStyle = '#3a3a45';
+    c.lineWidth = 1;
+    c.strokeRect(x0, y0, w, h);
+    c.restore();
+    return {
+      xMap: (x)=> x0 + (x - xRange[0])/(xRange[1]-xRange[0]) * w,
+      yMap: (y)=> y0 + h - (y - yRange[0])/(yRange[1]-yRange[0]) * h
+    };
+  }
+  function curve(c, xs, ys, xMap, yMap, color, lw){
+    c.save();
+    c.strokeStyle = color;
+    c.lineWidth = lw || 1.5;
+    c.beginPath();
+    for (let i = 0; i < xs.length; i++){
+      const x = xMap(xs[i]), y = yMap(ys[i]);
+      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.restore();
+  }
+  function label(c, x, y, txt, color, align){
+    c.save();
+    c.font = '11px JetBrains Mono, monospace';
+    c.fillStyle = color || '#b6b0a3';
+    c.textAlign = align || 'left';
+    c.fillText(txt, x, y);
+    c.restore();
+  }
+  return { ctx2, axes, curve, label };
+})();
+</script>
+
+
+
+<script>
+/* Fig. 2 — sprinkle sample dots inside the inline hemisphere SVG.
+   Coordinates match the SVG geometry: centre (360,240), radius 180,
+   back-ellipse depth 28 px to suggest perspective. */
+(function(){
+  const grp = document.getElementById('hemi-samples');
+  if (!grp) return;
+  const cx = 360, cy = 240, R = 180, depth = 28;
+  // generate 80 cosine-weighted samples on the upper hemisphere
+  const samples = [];
+  for (let i = 0; i < 80; i++){
+    const u = Math.random(), v = Math.random();
+    const phi = 2*Math.PI*u;
+    const cos_t = Math.sqrt(v);
+    const sin_t = Math.sqrt(1 - cos_t*cos_t);
+    samples.push({
+      x: sin_t * Math.cos(phi),
+      y: cos_t,
+      z: sin_t * Math.sin(phi)
+    });
+  }
+  // depth-sort: draw farther-back samples first
+  samples.sort((a, b) => b.z - a.z);
+  for (const s of samples){
+    const sx = cx + s.x * R;
+    const sy = cy - s.y * R - s.z * depth;
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', sx);
+    c.setAttribute('cy', sy);
+    c.setAttribute('r', 1.4);
+    c.setAttribute('fill', '#2a2a2a');
+    // back samples a touch lighter for depth cue
+    c.setAttribute('opacity', (0.32 + 0.45 * (s.z + 1) / 2).toFixed(2));
+    grp.appendChild(c);
+  }
+})();
+</script>
+
+<script>
+/* Fig. 3 — three lobes */
+(function(){
+  const canvas = document.getElementById('lobes-canvas');
+  if (!canvas) return;
+  const toggles = [true, true, true, true];
+  document.querySelectorAll('#lobes-toggles .tog').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = +b.dataset.lobe;
+      toggles[i] = !toggles[i];
+      b.classList.toggle('on', toggles[i]);
+      draw();
+    });
+  });
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const x0 = 60, y0 = 30, pw = w - 80, ph = h - 70;
+    const xs = []; for (let i = 0; i <= 200; i++) xs.push(i/200);
+    const ax = Plot.axes(c, x0, y0, pw, ph, [0,1], [0, 2.0], {xprec:2, yprec:1, xticks:5, yticks:4});
+    const data = xs.map(x => BRDF.lobes(x));
+    function lum(rgb){ return 0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2]; }
+    if (toggles[0]){
+      const ys = data.map(d => lum(d.baseSpec));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, '#ffae3d', 1.5);
+      Plot.label(c, ax.xMap(0.18), ax.yMap(lum(BRDF.lobes(0.18).baseSpec)) - 6, 'base spec', '#ffae3d');
+    }
+    if (toggles[1]){
+      const ys = data.map(d => lum(d.diff));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, '#6ce39a', 1.5);
+      Plot.label(c, ax.xMap(0.92), ax.yMap(lum(BRDF.lobes(0.92).diff)) + 14, 'diffuse', '#6ce39a', 'right');
+    }
+    if (toggles[2]){
+      const ys = data.map(d => lum(d.cc));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, '#4dc7ff', 1.5);
+      Plot.label(c, ax.xMap(0.05), ax.yMap(lum(BRDF.lobes(0.05).cc)) - 8, 'clearcoat', '#4dc7ff');
+    }
+    if (toggles[3]){
+      const channels = [['#ff5b9b', 0], ['#9bd96c', 1], ['#4dc7ff', 2]];
+      for (const [col, ch] of channels){
+        const ys = data.map(d => d.sum[ch]);
+        Plot.curve(c, xs, ys, ax.xMap, ax.yMap, col, 2.0);
+      }
+      Plot.label(c, ax.xMap(0.55), ax.yMap(BRDF.lobes(0.55).sum[0]) - 8, 'Σ (R)', '#ff5b9b');
+    }
+    Plot.label(c, x0+pw, y0-12, 'cos θ_v →', '#6c6759', 'right');
+    Plot.label(c, x0, y0-12, 'lobe magnitude', '#6c6759', 'left');
+  }
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+<script>
+/* Fig. 4 — thin-film */
+(function(){
+  const canvas = document.getElementById('iri-canvas');
+  if (!canvas) return;
+  const rD = document.getElementById('r-d');
+  const rN2 = document.getElementById('r-n2');
+  const rN3 = document.getElementById('r-n3');
+  const vD = document.getElementById('v-d');
+  const vN2 = document.getElementById('v-n2');
+  const vN3 = document.getElementById('v-n3');
+  const reset = document.getElementById('iri-reset');
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const x0 = 60, y0 = 30, pw = w - 80, ph = h - 90;
+    const opts = { d: +rD.value, eta2: +rN2.value, eta3: +rN3.value, eta1: 1.1 };
+    vD.textContent = opts.d.toFixed(2);
+    vN2.textContent = opts.eta2.toFixed(2);
+    vN3.textContent = opts.eta3.toFixed(2);
+    const xs = []; for (let i = 0; i <= 400; i++) xs.push(i/400);
+    const ax = Plot.axes(c, x0, y0, pw, ph, [0,1], [0, 1.5], {xprec:2, yprec:1, xticks:5, yticks:5});
+    const swH = 18;
+    const grad = c.createLinearGradient(x0, 0, x0+pw, 0);
+    const gamma = 1.0;
+    const exposure = 1.5;
+    for (let t = 0; t <= 1; t += 0.02){
+      const F = BRDF.thinFilmRGB(t, opts);
+      const tone = v => Math.pow(Math.min(1, Math.max(0, v * exposure)), gamma);
+      const r = tone(F[0]), g = tone(F[1]), b = tone(F[2]);
+      grad.addColorStop(t, `rgb(${(r*255)|0},${(g*255)|0},${(b*255)|0})`);
+    }
+    c.fillStyle = grad;
+    c.fillRect(x0, y0+ph+30, pw, swH);
+    c.strokeStyle = '#d6d2c4';
+    c.strokeRect(x0, y0+ph+30, pw, swH);
+    Plot.label(c, x0, y0+ph+28, 'visible swatch (display-biased F)  →', '#8a857a');
+    const colors = ['#b3275a', '#2b8a4e', '#1f5e94'];
+    const labels = ['R', 'G', 'B'];
+    for (let ch = 0; ch < 3; ch++){
+      const ys = xs.map(x => BRDF.thinFilmRGB(x, opts)[ch]);
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, colors[ch], 1.6);
+    }
+    Plot.label(c, x0+pw, y0-10, 'cos θ_v →', '#8a857a', 'right');
+    Plot.label(c, x0, y0-10, 'reflectance F(cos θ_v)', '#8a857a');
+    let lx = x0 + 12;
+    for (let ch = 0; ch < 3; ch++){
+      c.fillStyle = colors[ch];
+      c.fillRect(lx, y0+8, 14, 2);
+      Plot.label(c, lx+18, y0+12, labels[ch], colors[ch]);
+      lx += 50;
+    }
+    if (Math.abs(opts.d-1.20) < 0.01 && Math.abs(opts.eta2-1.40) < 0.01 && Math.abs(opts.eta3-1.05) < 0.01){
+      Plot.label(c, x0 + pw - 10, y0 + 26, '— trained material —', '#6b1f24', 'right');
+    }
+  }
+  rD.addEventListener('input', draw);
+  rN2.addEventListener('input', draw);
+  rN3.addEventListener('input', draw);
+  reset.addEventListener('click', ()=>{ rD.value = 1.2; rN2.value = 1.4; rN3.value = 1.05; draw(); });
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+<script>
+/* Fig. 5 — multiple importance sampling on the hemisphere.
+   Two panels:
+    (left) top-down hemisphere view. ω_o sits at azimuth 0 on the
+           inner ring at radius sin θ_v. Three sample clouds, drawn
+           in the project's markdeep palette:
+              cosine        — diffuse green, cluster around centre (n)
+              VNDF α=0.20   — orange, narrower cluster around the
+                              mirror reflection direction
+              VNDF α=0.0156 — blue, near-mirror tight dot at reflection
+    (right) the radial PDFs of each strategy, normalised so they fit
+           on the same axes. Tall narrow blue spike for clearcoat. */
+(function(){
+  const canvas = document.getElementById('mis-canvas');
+  if (!canvas) return;
+  const toggles = [true, true, true];
+  document.querySelectorAll('#mis-toggles .tog').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = +b.dataset.strat;
+      toggles[i] = !toggles[i];
+      b.classList.toggle('on', toggles[i]);
+      draw();
+    });
+  });
+  const rCos = document.getElementById('r-mis-cos');
+  const vCos = document.getElementById('v-mis-cos');
+
+  // markdeep palette (matches the rest of the doc)
+  const INK = '#0e0e0e';
+  const INK_SOFT = '#2a2a2a';
+  const INK_FAINT = '#6e6e6e';
+  const RULE = '#cfcfcf';
+  // strategy colours — restrained, document-tone
+  const C_COS = '#2a8a4a'; // green: diffuse cosine
+  const C_VND = '#b8651a'; // orange: VNDF wider lobe
+  const C_CC  = '#1a4ea3'; // blue: clearcoat
+  const C_OO  = '#c41a5a'; // ω_o marker
+
+  function rand(seed){ let s = seed | 0; return ()=>{ s = (s*16807) % 2147483647; return (s & 0x7fffffff) / 2147483647; }; }
+
+  function sampleCosine(rng){
+    const u = rng(), v = rng();
+    const phi = 2*Math.PI*u;
+    const cosT = Math.sqrt(v);
+    const sinT = Math.sqrt(1-cosT*cosT);
+    return [sinT*Math.cos(phi), cosT, sinT*Math.sin(phi)];
+  }
+  // Simplified: sample the half-vector around n with GGX, then reflect ω_o
+  // through it. For the visualization purposes here, what matters is the
+  // resulting sample distribution on the upper hemisphere — the PDF tightness
+  // around the mirror direction.
+  function sampleVNDF(alpha, omegaO, rng){
+    const u = rng(), v = rng();
+    const phi = 2*Math.PI*u;
+    const a2 = alpha*alpha;
+    // GGX normal distribution sampling for the half-vector around n
+    const cosTm = Math.sqrt((1 - v)/(1 + (a2 - 1)*v));
+    const sinTm = Math.sqrt(1 - cosTm*cosTm);
+    const m = [sinTm*Math.cos(phi), cosTm, sinTm*Math.sin(phi)];
+    // reflect omegaO around m: ω_i = 2(ω_o·m)m − ω_o
+    const dot = omegaO[0]*m[0] + omegaO[1]*m[1] + omegaO[2]*m[2];
+    const wi = [2*dot*m[0]-omegaO[0], 2*dot*m[1]-omegaO[1], 2*dot*m[2]-omegaO[2]];
+    // keep only upper-hemisphere samples
+    if (wi[1] < 0) return null;
+    return wi;
+  }
+
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const cosV = +rCos.value;
+    vCos.textContent = cosV.toFixed(2);
+    const sinV = Math.sqrt(1 - cosV*cosV);
+    const omegaO = [sinV, cosV, 0];
+    // mirror reflection direction (over the macroscopic normal)
+    const refl = [-sinV, cosV, 0];
+
+    /* === LEFT PANEL: top-down hemisphere === */
+    const cx = w*0.27, cy = h*0.5, R = Math.min(cx, cy) - 30;
+
+    c.save();
+    // outer rim
+    c.strokeStyle = INK_SOFT; c.lineWidth = 1.2;
+    c.beginPath(); c.arc(cx, cy, R, 0, 2*Math.PI); c.stroke();
+    // inner ring at radius sin θ_v
+    c.strokeStyle = RULE; c.lineWidth = 0.6;
+    c.beginPath(); c.arc(cx, cy, R*sinV, 0, 2*Math.PI); c.stroke();
+    // axes
+    c.strokeStyle = RULE; c.lineWidth = 0.5;
+    c.setLineDash([3, 3]);
+    c.beginPath();
+    c.moveTo(cx-R, cy); c.lineTo(cx+R, cy);
+    c.moveTo(cx, cy-R); c.lineTo(cx, cy+R);
+    c.stroke();
+    c.setLineDash([]);
+
+    // ω_o (incoming/outgoing direction)
+    const oxs = cx + omegaO[0]*R, oys = cy - omegaO[2]*R;
+    // reflection point (where mirror highlight should land)
+    const rxs = cx + refl[0]*R, rys = cy - refl[2]*R;
+
+    const N = 280;
+
+    // cosine strategy — clusters around the normal (centre)
+    if (toggles[0]){
+      const r = rand(7);
+      c.fillStyle = C_COS;
+      for (let i = 0; i < N; i++){
+        const s = sampleCosine(r);
+        const sx = cx + s[0]*R, sy = cy - s[2]*R;
+        c.globalAlpha = 0.45;
+        c.beginPath(); c.arc(sx, sy, 1.4, 0, 2*Math.PI); c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    // VNDF α=0.20 — clusters around the reflection direction
+    if (toggles[1]){
+      const r = rand(13);
+      c.fillStyle = C_VND;
+      let drawn = 0;
+      for (let i = 0; i < N*3 && drawn < N; i++){
+        const s = sampleVNDF(0.20, omegaO, r);
+        if (!s) continue;
+        const sx = cx + s[0]*R, sy = cy - s[2]*R;
+        c.globalAlpha = 0.6;
+        c.beginPath(); c.arc(sx, sy, 1.5, 0, 2*Math.PI); c.fill();
+        drawn++;
+      }
+      c.globalAlpha = 1;
+    }
+    // VNDF α=0.0156 — essentially the mirror dot
+    if (toggles[2]){
+      const r = rand(31);
+      c.fillStyle = C_CC;
+      let drawn = 0;
+      for (let i = 0; i < N*3 && drawn < N; i++){
+        const s = sampleVNDF(0.0156, omegaO, r);
+        if (!s) continue;
+        const sx = cx + s[0]*R, sy = cy - s[2]*R;
+        c.globalAlpha = 0.85;
+        c.beginPath(); c.arc(sx, sy, 1.8, 0, 2*Math.PI); c.fill();
+        drawn++;
+      }
+      c.globalAlpha = 1;
+    }
+
+    // ω_o marker — drawn last so it's on top
+    c.strokeStyle = C_OO; c.lineWidth = 1.0;
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(oxs, oys); c.stroke();
+    c.fillStyle = C_OO;
+    c.beginPath(); c.arc(oxs, oys, 4.5, 0, 2*Math.PI); c.fill();
+    Plot.label(c, oxs + 8, oys - 6, 'ω_o', C_OO);
+    // reflection direction marker (small open ring, just for orientation)
+    c.strokeStyle = INK_FAINT; c.lineWidth = 0.8;
+    c.beginPath(); c.arc(rxs, rys, 4.5, 0, 2*Math.PI); c.stroke();
+    Plot.label(c, rxs + 8, rys + 12, 'reflect', INK_FAINT);
+    // n at origin
+    c.fillStyle = INK_SOFT;
+    c.beginPath(); c.arc(cx, cy, 2.5, 0, 2*Math.PI); c.fill();
+    Plot.label(c, cx + 6, cy + 14, 'n', INK_SOFT);
+
+    Plot.label(c, cx - R, cy - R - 12, 'top-down · n out of page', INK_FAINT);
+    c.restore();
+
+    /* === RIGHT PANEL: radial PDFs === */
+    const x0 = w*0.55, y0 = 30, pw = w - x0 - 30, ph = h - 70;
+    const xs = []; for (let i = 0; i <= 200; i++) xs.push(i/200);
+    const ax = Plot.axes(c, x0, y0, pw, ph, [0,1], [0, 5], {xprec:2, yprec:1});
+
+    function pdfCosine(cos){ return cos / Math.PI; }
+    function pdfVNDF(cos, alpha){
+      const a2 = alpha*alpha;
+      const t = cos*cos*(a2-1) + 1;
+      return a2 / (Math.PI*t*t + 1e-6) * cos;
+    }
+
+    if (toggles[0]){
+      const ys = xs.map(x => pdfCosine(x));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, C_COS, 1.5);
+    }
+    if (toggles[1]){
+      const ys = xs.map(x => Math.min(5, pdfVNDF(x, 0.20)));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, C_VND, 1.5);
+    }
+    if (toggles[2]){
+      const ys = xs.map(x => Math.min(5, pdfVNDF(x, 0.0156)));
+      Plot.curve(c, xs, ys, ax.xMap, ax.yMap, C_CC, 1.5);
+    }
+    Plot.label(c, x0, y0 - 12, 'PDF p_k(ω) — radial profile', INK_FAINT);
+    Plot.label(c, x0+pw, y0 - 12, 'cos θ_i →', INK_FAINT, 'right');
+
+    // labels
+    if (toggles[0]) Plot.label(c, x0 + pw*0.62, ax.yMap(pdfCosine(0.62)) - 8, 'cosine', C_COS);
+    if (toggles[1]) Plot.label(c, x0 + pw*0.92, ax.yMap(pdfVNDF(0.92, 0.20)) - 8, 'VNDF α=0.20', C_VND, 'right');
+    if (toggles[2]) Plot.label(c, x0 + pw*0.96, ax.yMap(4.6) - 8, 'VNDF α=0.0156', C_CC, 'right');
+  }
+  rCos.addEventListener('input', draw);
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+<script>
+/* Fig. 6 — rotational symmetry around the surface normal.
+   Two panels:
+    (left) top-down view of the hemisphere. ω_o sits at polar
+           angle θ_v from the normal, rotated to azimuth φ. A
+           cosine-sampled cloud (drawn as a gradient ring around
+           the normal) is invariant under φ — we draw it once
+           and don't rotate it, because rotational symmetry
+           means the cloud IS its own rotation.
+    (right) the radiance L_o(cos θ_v), with a probe at the
+           current θ_v. As φ changes, the right panel does NOT
+           change — that's the punchline. */
+(function(){
+  const canvas = document.getElementById('sym-canvas');
+  if (!canvas) return;
+  const rPhi = document.getElementById('r-phi');
+  const rTh  = document.getElementById('r-theta');
+  const vPhi = document.getElementById('v-phi');
+  const vTh  = document.getElementById('v-theta');
+  const btn  = document.getElementById('sym-spin');
+  let spinning = false;
+
+  // colours pulled from the markdeep palette
+  const INK = '#0e0e0e';
+  const INK_SOFT = '#2a2a2a';
+  const INK_FAINT = '#6e6e6e';
+  const INK_MUTED = '#999999';
+  const RULE = '#cfcfcf';
+  const BLUE = '#1a4ea3';   // ω_o
+  const RED  = '#c41a5a';   // R curve
+  const GRN  = '#2a8a4a';   // G curve
+  const BLU2 = '#1f6aa5';   // B curve
+
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const phi = (+rPhi.value) * Math.PI/180;
+    const th  = (+rTh.value)  * Math.PI/180;
+    vPhi.textContent = (+rPhi.value).toFixed(0) + '°';
+    vTh.textContent  = (+rTh.value).toFixed(0) + '°';
+    const cosTh = Math.cos(th), sinTh = Math.sin(th);
+
+    /* === LEFT PANEL: top-down hemisphere view === */
+    const cx = w * 0.27, cy = h * 0.5, R = Math.min(cx, cy) - 30;
+
+    // outer rim
+    c.save();
+    c.strokeStyle = INK_SOFT; c.lineWidth = 1.2;
+    c.beginPath(); c.arc(cx, cy, R, 0, 2*Math.PI); c.stroke();
+    // inner ring (constant cos θ_v contour)
+    c.strokeStyle = RULE; c.lineWidth = 0.6;
+    c.beginPath(); c.arc(cx, cy, R*sinTh, 0, 2*Math.PI); c.stroke();
+    // axes
+    c.strokeStyle = RULE; c.lineWidth = 0.5;
+    c.setLineDash([3, 3]);
+    c.beginPath();
+    c.moveTo(cx - R, cy); c.lineTo(cx + R, cy);
+    c.moveTo(cx, cy - R); c.lineTo(cx, cy + R);
+    c.stroke();
+    c.setLineDash([]);
+
+    // sample cloud — cosine-weighted, rotationally symmetric around the normal.
+    // We rotate it WITH φ so the rotation is visible; the symmetry argument is
+    // that the integral over this rotated cloud is the same regardless of φ.
+    function rng(seed){ let s = seed|0; return ()=>{ s=(s*16807)%2147483647; return (s & 0x7fffffff)/2147483647;};}
+    const r = rng(99);
+    const N = 200;
+    c.fillStyle = INK_SOFT;
+    for (let i = 0; i < N; i++){
+      const u = r(), v = r();
+      const lphi = 2*Math.PI*u;
+      const lcos = Math.sqrt(v);
+      const lsin = Math.sqrt(1 - lcos*lcos);
+      const lx = lsin*Math.cos(lphi), lz = lsin*Math.sin(lphi);
+      const sx = cx + (lx*Math.cos(phi) - lz*Math.sin(phi))*R;
+      const sy = cy - (lx*Math.sin(phi) + lz*Math.cos(phi))*R;
+      c.globalAlpha = 0.45;
+      c.beginPath(); c.arc(sx, sy, 1.4, 0, 2*Math.PI); c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // ω_o marker — sits on the inner (sin θ_v) ring at azimuth φ
+    const oxs = cx + sinTh*Math.cos(phi)*R;
+    const oys = cy - sinTh*Math.sin(phi)*R;
+    // a thin radius from origin to ω_o for guidance
+    c.strokeStyle = BLUE; c.lineWidth = 1.0;
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(oxs, oys); c.stroke();
+    c.fillStyle = BLUE;
+    c.beginPath(); c.arc(oxs, oys, 5, 0, 2*Math.PI); c.fill();
+    Plot.label(c, oxs + 8, oys - 8, 'ω_o', BLUE);
+
+    // φ arc indicator
+    const phiArcR = R * 0.18;
+    c.strokeStyle = BLUE; c.lineWidth = 0.8;
+    c.beginPath();
+    c.arc(cx, cy, phiArcR, 0, -phi, true);
+    c.stroke();
+    Plot.label(c, cx + phiArcR + 4, cy - 4, 'φ', BLUE);
+
+    // normal label at centre
+    c.fillStyle = INK_SOFT;
+    c.beginPath(); c.arc(cx, cy, 2.5, 0, 2*Math.PI); c.fill();
+    Plot.label(c, cx + 6, cy + 14, 'n', INK_SOFT);
+
+    Plot.label(c, cx - R, cy - R - 12, 'top-down · normal pointing out of page', INK_FAINT);
+    c.restore();
+
+    /* === RIGHT PANEL: L_o(cos θ_v) with a probe at the current θ_v ===
+       This panel does NOT depend on φ at all — that is the symmetry. */
+    const ax0 = w*0.58, ay0 = 30, aw = w - ax0 - 40, ah = h - 70;
+    const xs = []; for (let i = 0; i <= 200; i++) xs.push(i/200);
+    const ax = Plot.axes(c, ax0, ay0, aw, ah, [0,1], [0, 1.6], {xprec:2, yprec:1, xticks:5, yticks:4});
+    const ysR = xs.map(x => Math.min(1.6, BRDF.lobes(x).sum[0]));
+    const ysG = xs.map(x => Math.min(1.6, BRDF.lobes(x).sum[1]));
+    const ysB = xs.map(x => Math.min(1.6, BRDF.lobes(x).sum[2]));
+    Plot.curve(c, xs, ysR, ax.xMap, ax.yMap, RED,  1.4);
+    Plot.curve(c, xs, ysG, ax.xMap, ax.yMap, GRN,  1.4);
+    Plot.curve(c, xs, ysB, ax.xMap, ax.yMap, BLU2, 1.4);
+
+    // probe at cos θ_v
+    const probe = cosTh;
+    const px = ax.xMap(probe);
+    c.strokeStyle = INK_SOFT;
+    c.lineWidth = 1; c.setLineDash([4, 4]);
+    c.beginPath(); c.moveTo(px, ay0); c.lineTo(px, ay0+ah); c.stroke();
+    c.setLineDash([]);
+    const pR = BRDF.lobes(probe).sum[0];
+    const pG = BRDF.lobes(probe).sum[1];
+    const pB = BRDF.lobes(probe).sum[2];
+    c.fillStyle = RED;  c.beginPath(); c.arc(px, ax.yMap(Math.min(1.6,pR)), 3.5, 0, 2*Math.PI); c.fill();
+    c.fillStyle = GRN;  c.beginPath(); c.arc(px, ax.yMap(Math.min(1.6,pG)), 3.5, 0, 2*Math.PI); c.fill();
+    c.fillStyle = BLU2; c.beginPath(); c.arc(px, ax.yMap(Math.min(1.6,pB)), 3.5, 0, 2*Math.PI); c.fill();
+
+    Plot.label(c, ax0, ay0 - 12, 'L_o(cos θ_v) — RGB', INK_FAINT);
+    Plot.label(c, ax0 + aw, ay0 - 12, 'cos θ_v →', INK_FAINT, 'right');
+    Plot.label(c, px + 6, ay0 + 14, `cos θ_v = ${probe.toFixed(3)}`, INK_SOFT);
+
+    // numeric readout demonstrating φ-invariance
+    let by = ay0 + ah - 56;
+    c.font = '11px "Source Code Pro", monospace';
+    c.fillStyle = INK;
+    c.textAlign = 'right';
+    c.fillText('φ-invariant readout:', ax0 + aw - 4, by); by += 14;
+    c.fillStyle = RED;  c.fillText(`R  ${pR.toFixed(4)}`, ax0 + aw - 4, by); by += 12;
+    c.fillStyle = GRN;  c.fillText(`G  ${pG.toFixed(4)}`, ax0 + aw - 4, by); by += 12;
+    c.fillStyle = BLU2; c.fillText(`B  ${pB.toFixed(4)}`, ax0 + aw - 4, by);
+    c.textAlign = 'left';
+  }
+
+  function loop(){
+    if (!spinning) return;
+    let v = +rPhi.value;
+    v = (v + 1.2) % 360;
+    rPhi.value = v;
+    draw();
+    requestAnimationFrame(loop);
+  }
+  rPhi.addEventListener('input', draw);
+  rTh.addEventListener('input', draw);
+  btn.addEventListener('click', ()=>{
+    spinning = !spinning;
+    btn.textContent = spinning ? 'Stop' : 'Auto-spin φ';
+    if (spinning) loop();
+  });
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+<script>
+/* Fig. 7 — Fourier features, in-browser MLP training */
+(function(){
+  const canvas = document.getElementById('ff-canvas');
+  if (!canvas) return;
+  const rL = document.getElementById('r-L');
+  const rH = document.getElementById('r-H');
+  const vL = document.getElementById('v-L');
+  const vH = document.getElementById('v-H');
+  const status = document.getElementById('v-ff-status');
+  const iterEl = document.getElementById('v-ff-iter');
+  const mseEl = document.getElementById('v-ff-mse');
+  const paramEl = document.getElementById('v-ff-params');
+  const btnTrain = document.getElementById('ff-train');
+  const btnStep = document.getElementById('ff-step');
+
+  const N = 200;
+  const xs = []; for (let i = 0; i < N; i++) xs.push(i/(N-1));
+  function target(x){
+    const opd = 2*1.4*1.2*Math.sqrt(Math.max(0, 1 - (1.1/1.4)**2*(1-x*x)));
+    const ph = 2*Math.PI*opd/0.55;
+    const F0 = 0.005;
+    const fr = F0 + (1-F0)*Math.pow(1-x,5);
+    return fr*(0.55 + 0.7*(0.5 + 0.5*Math.cos(ph)) - 0.15*0.18*(0.5+0.5*Math.cos(2*ph+0.4)))
+         + 0.20*Math.pow(x, 0.6) + 0.05;
+  }
+  const ys = xs.map(target);
+
+  let L = +rL.value, H = +rH.value;
+  let W0, b0, W1, b1, W2, b2;
+  let mW0,vW0,mb0,vb0,mW1,vW1,mb1,vb1,mW2,vW2,mb2,vb2;
+  let adamT = 0;
+  let iter = 0;
+  let curMSE = 0;
+  let training = false;
+  const lr = 0.01;
+  const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+
+  function gauss(){ let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  function makeMat(r, c, scale){ const a = new Float32Array(r*c); for (let i = 0; i < a.length; i++) a[i] = gauss() * scale; return a; }
+
+  function init(){
+    iter = 0; adamT = 0;
+    L = +rL.value; H = +rH.value;
+    const din = 1 + 2*L;
+    const s0 = Math.sqrt(2/din);
+    const s1 = Math.sqrt(2/H);
+    W0 = makeMat(H, din, s0); b0 = new Float32Array(H);
+    W1 = makeMat(H, H, s1);   b1 = new Float32Array(H);
+    W2 = makeMat(1, H, s1);   b2 = new Float32Array(1);
+    mW0 = new Float32Array(W0.length); vW0 = new Float32Array(W0.length);
+    mW1 = new Float32Array(W1.length); vW1 = new Float32Array(W1.length);
+    mW2 = new Float32Array(W2.length); vW2 = new Float32Array(W2.length);
+    mb0 = new Float32Array(b0.length); vb0 = new Float32Array(b0.length);
+    mb1 = new Float32Array(b1.length); vb1 = new Float32Array(b1.length);
+    mb2 = new Float32Array(b2.length); vb2 = new Float32Array(b2.length);
+    iterEl.textContent = '0';
+    mseEl.textContent = '—';
+    paramEl.textContent = (H*din + H + H*H + H + H + 1) + '';
+  }
+
+  function encode(x){
+    const f = new Float32Array(1 + 2*L);
+    f[0] = x;
+    for (let k = 0; k < L; k++){
+      const a = x*Math.PI*Math.pow(2, k);
+      f[1+k] = Math.sin(a);
+      f[1+L+k] = Math.cos(a);
+    }
+    return f;
+  }
+  function forward(x){
+    const din = 1 + 2*L;
+    const f = encode(x);
+    const h0 = new Float32Array(H);
+    for (let i = 0; i < H; i++){ let s = b0[i]; for (let j = 0; j < din; j++) s += W0[i*din+j] * f[j]; h0[i] = Math.max(0, s); }
+    const h1 = new Float32Array(H);
+    for (let i = 0; i < H; i++){ let s = b1[i]; for (let j = 0; j < H; j++) s += W1[i*H+j] * h0[j]; h1[i] = Math.max(0, s); }
+    let out = b2[0];
+    for (let i = 0; i < H; i++) out += W2[i] * h1[i];
+    return { out, f, h0, h1 };
+  }
+
+  function trainStep(){
+    const din = 1 + 2*L;
+    const gW0 = new Float32Array(W0.length);
+    const gb0 = new Float32Array(b0.length);
+    const gW1 = new Float32Array(W1.length);
+    const gb1 = new Float32Array(b1.length);
+    const gW2 = new Float32Array(W2.length);
+    const gb2 = new Float32Array(b2.length);
+    let mse = 0;
+    for (let n = 0; n < N; n++){
+      const x = xs[n], y = ys[n];
+      const fw = forward(x);
+      const err = fw.out - y;
+      mse += err*err;
+      const dout = 2*err / N;
+      gb2[0] += dout;
+      const dh1 = new Float32Array(H);
+      for (let i = 0; i < H; i++){ gW2[i] += dout * fw.h1[i]; dh1[i] = dout * W2[i] * (fw.h1[i] > 0 ? 1 : 0); }
+      const dh0 = new Float32Array(H);
+      for (let i = 0; i < H; i++){
+        gb1[i] += dh1[i];
+        for (let j = 0; j < H; j++){ gW1[i*H+j] += dh1[i] * fw.h0[j]; dh0[j] += dh1[i] * W1[i*H+j]; }
+      }
+      for (let j = 0; j < H; j++) dh0[j] *= (fw.h0[j] > 0 ? 1 : 0);
+      for (let i = 0; i < H; i++){
+        gb0[i] += dh0[i];
+        for (let j = 0; j < din; j++){ gW0[i*din+j] += dh0[i] * fw.f[j]; }
+      }
+    }
+    mse /= N;
+    curMSE = mse;
+    adamT += 1;
+    function adam(p, m, v, g){
+      const bc1 = 1 - Math.pow(beta1, adamT);
+      const bc2 = 1 - Math.pow(beta2, adamT);
+      for (let i = 0; i < p.length; i++){
+        m[i] = beta1*m[i] + (1-beta1)*g[i];
+        v[i] = beta2*v[i] + (1-beta2)*g[i]*g[i];
+        p[i] -= lr * (m[i]/bc1) / (Math.sqrt(v[i]/bc2) + eps);
+      }
+    }
+    adam(W0, mW0, vW0, gW0); adam(b0, mb0, vb0, gb0);
+    adam(W1, mW1, vW1, gW1); adam(b1, mb1, vb1, gb1);
+    adam(W2, mW2, vW2, gW2); adam(b2, mb2, vb2, gb2);
+    iter++;
+  }
+
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const x0 = 60, y0 = 30, pw = w - 80, ph = h - 100;
+    const ax = Plot.axes(c, x0, y0, pw, ph, [0,1], [0, 1.4], {xprec:2, yprec:1});
+    Plot.curve(c, xs, ys, ax.xMap, ax.yMap, '#d9a85a', 1.4);
+    Plot.label(c, x0+pw-2, ax.yMap(target(0.95))-6, 'target', '#d9a85a', 'right');
+    const yhat = xs.map(x => forward(x).out);
+    Plot.curve(c, xs, yhat, ax.xMap, ax.yMap, '#4dc7ff', 1.6);
+    Plot.label(c, x0+pw-2, ax.yMap(yhat[Math.floor(0.95*yhat.length)])+14, 'network', '#4dc7ff', 'right');
+    const bx0 = x0, by0 = y0+ph+22, bw = pw, bh = 30;
+    c.fillStyle = '#0e0e14';
+    c.fillRect(bx0, by0, bw, bh);
+    c.strokeStyle = '#2a2a35';
+    c.strokeRect(bx0, by0, bw, bh);
+    Plot.label(c, bx0, by0-4, 'γ(x): raw + sin/cos basis (L=' + L + ')', '#6c6759');
+    const bands = 1 + 2*L;
+    for (let k = 0; k < bands; k++){
+      const yy = by0 + (k+0.5)/bands * bh;
+      c.beginPath();
+      for (let i = 0; i < N; i++){
+        const x = xs[i];
+        let v;
+        if (k === 0) v = x;
+        else if (k <= L) v = (Math.sin(x*Math.PI*Math.pow(2, k-1)) + 1)/2;
+        else v = (Math.cos(x*Math.PI*Math.pow(2, k-1-L)) + 1)/2;
+        const px = bx0 + i/(N-1)*bw;
+        const yshade = yy - bh/bands*0.4 + (1-v) * bh/bands*0.8;
+        if (i === 0) c.moveTo(px, yshade);
+        else c.lineTo(px, yshade);
+      }
+      c.strokeStyle = k === 0 ? '#d9a85a' : (k <= L ? '#ff5b9b' : '#4dc7ff');
+      c.lineWidth = 0.8;
+      c.stroke();
+    }
+    Plot.label(c, x0+pw, y0-10, 'cos θ_v →', '#6c6759', 'right');
+    Plot.label(c, x0, y0-10, 'value', '#6c6759');
+  }
+
+  function step100(){
+    if (training) return;
+    training = true;
+    status.textContent = 'training…';
+    let n = 0;
+    function go(){
+      const burst = 10;
+      for (let i = 0; i < burst && n < 100; i++){ trainStep(); n++; }
+      iterEl.textContent = '' + iter;
+      mseEl.textContent = curMSE.toExponential(2);
+      draw();
+      if (n < 100) requestAnimationFrame(go);
+      else { training = false; status.textContent = 'paused'; }
+    }
+    go();
+  }
+  function fullTrain(){
+    if (training) return;
+    init();
+    training = true;
+    status.textContent = 'training…';
+    const TOTAL = 1500;
+    let n = 0;
+    function go(){
+      const burst = 8;
+      for (let i = 0; i < burst && n < TOTAL; i++){ trainStep(); n++; }
+      iterEl.textContent = '' + iter;
+      mseEl.textContent = curMSE.toExponential(2);
+      draw();
+      if (n < TOTAL) requestAnimationFrame(go);
+      else { training = false; status.textContent = 'converged'; }
+    }
+    go();
+  }
+
+  rL.addEventListener('input', ()=>{ vL.textContent = rL.value; init(); draw(); status.textContent = 'idle'; });
+  rH.addEventListener('input', ()=>{ vH.textContent = rH.value; init(); draw(); status.textContent = 'idle'; });
+  btnTrain.addEventListener('click', fullTrain);
+  btnStep.addEventListener('click', step100);
+  vL.textContent = rL.value;
+  vH.textContent = rH.value;
+  init();
+  draw();
+  setTimeout(fullTrain, 600);
+})();
+</script>
+
+<script>
+/* ============================================================
+   Fig. 8 — live network forward pass.
+   Slider at the bottom drives cos θ_v through the deployed
+   122-parameter MLP (NR.forwardWithActivations); node fills
+   reflect activations, edge widths reflect signal magnitudes.
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('net-svg');
+  if (!svg || typeof NR === 'undefined') return;
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const inDim = NR.IN, H = NR.H, OUT = NR.OUT;
+  const cols = [
+    { x: 100, n: inDim, label: 'γ(x)' },
+    { x: 320, n: H,     label: 'h₀'  },
+    { x: 540, n: H,     label: 'h₁'  },
+    { x: 760, n: OUT,   label: 'RGB' }
+  ];
+  const VB_H = 360;
+  function yFor(i, n){
+    const span = 250;
+    const y0 = (VB_H - span) / 2;
+    if (n === 1) return VB_H / 2;
+    return y0 + i / (n - 1) * span;
+  }
+
+  // === Build the graph ===
+  // edges first (so they sit behind nodes)
+  const edgeEls = []; // [{from:[l,j], to:[l+1,i], el}]
+  for (let l = 0; l < cols.length - 1; l++){
+    const a = cols[l], b = cols[l+1];
+    edgeEls[l] = [];
+    for (let i = 0; i < b.n; i++){          // destination unit i in layer l+1
+      edgeEls[l][i] = [];
+      for (let j = 0; j < a.n; j++){        // source unit j in layer l
+        const e = document.createElementNS(ns, 'line');
+        e.setAttribute('x1', a.x); e.setAttribute('y1', yFor(j, a.n));
+        e.setAttribute('x2', b.x); e.setAttribute('y2', yFor(i, b.n));
+        e.setAttribute('stroke', '#a8a298');
+        e.setAttribute('stroke-width', '0.5');
+        e.setAttribute('opacity', '0.25');
+        svg.appendChild(e);
+        edgeEls[l][i][j] = e;
+      }
+    }
+  }
+
+  // nodes
+  const nodeEls = [];   // [layer][i] -> circle
+  const valEls = [];    // [layer][i] -> text element with current value
+  for (let l = 0; l < cols.length; l++){
+    const a = cols[l];
+    nodeEls[l] = []; valEls[l] = [];
+    for (let i = 0; i < a.n; i++){
+      const cy = yFor(i, a.n);
+      const r = document.createElementNS(ns, 'circle');
+      r.setAttribute('cx', a.x);
+      r.setAttribute('cy', cy);
+      r.setAttribute('r', 11);
+      r.setAttribute('stroke-width', '1.2');
+      r.setAttribute('fill', '#fbf9ee');
+      r.setAttribute('stroke', '#555049');
+      svg.appendChild(r);
+      nodeEls[l][i] = r;
+
+      const t = document.createElementNS(ns, 'text');
+      t.setAttribute('x', a.x + 18);
+      t.setAttribute('y', cy + 3.5);
+      t.setAttribute('font-size', 10);
+      t.setAttribute('fill', '#555049');
+      t.setAttribute('font-family', 'JetBrains Mono, monospace');
+      svg.appendChild(t);
+      valEls[l][i] = t;
+    }
+  }
+
+  // labels for input features
+  const featNames = ['x', 'sin(πx)', 'sin(2πx)', 'cos(πx)', 'cos(2πx)'];
+  for (let i = 0; i < inDim; i++){
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', 100 - 18);
+    t.setAttribute('y', yFor(i, inDim) + 3.5);
+    t.setAttribute('text-anchor', 'end');
+    t.setAttribute('font-size', 10);
+    t.setAttribute('fill', '#8a857a');
+    t.setAttribute('font-family', 'JetBrains Mono, monospace');
+    t.textContent = featNames[i];
+    svg.appendChild(t);
+  }
+  // RGB labels at output
+  const outNames = ['R', 'G', 'B'];
+  const outColors = ['#b3275a', '#2b8a4e', '#1f5e94'];
+  for (let i = 0; i < OUT; i++){
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', 760 + 32);
+    t.setAttribute('y', yFor(i, OUT) + 4.5);
+    t.setAttribute('font-size', 13);
+    t.setAttribute('font-family', 'Source Serif Pro, Georgia, serif');
+    t.setAttribute('font-weight', '700');
+    t.setAttribute('fill', outColors[i]);
+    t.textContent = outNames[i];
+    svg.appendChild(t);
+  }
+
+  // column titles
+  const titles = [
+    {x: 100, t: 'γ(x) — encoder',   sub: '5 features'},
+    {x: 320, t: 'h₀ — fc0, ReLU',    sub: '5×7 + 7 = 42'},
+    {x: 540, t: 'h₁ — fc1, ReLU',    sub: '7×7 + 7 = 56'},
+    {x: 760, t: 'fc2, clamp ≥ 0',    sub: '7×3 + 3 = 24'}
+  ];
+  for (const t of titles){
+    const tx = document.createElementNS(ns, 'text');
+    tx.setAttribute('x', t.x); tx.setAttribute('y', 28);
+    tx.setAttribute('text-anchor', 'middle');
+    tx.setAttribute('class', 'title');
+    tx.textContent = t.t;
+    svg.appendChild(tx);
+    const sx = document.createElementNS(ns, 'text');
+    sx.setAttribute('x', t.x); sx.setAttribute('y', VB_H - 14);
+    sx.setAttribute('text-anchor', 'middle');
+    sx.setAttribute('font-size', '10');
+    sx.setAttribute('fill', '#8a857a');
+    sx.setAttribute('font-family', 'JetBrains Mono, monospace');
+    sx.textContent = t.sub;
+    svg.appendChild(sx);
+  }
+  // total badge
+  const tot = document.createElementNS(ns, 'text');
+  tot.setAttribute('x', 900); tot.setAttribute('y', 180);
+  tot.setAttribute('text-anchor', 'end');
+  tot.setAttribute('class', 'title');
+  tot.setAttribute('fill', '#6b1f24');
+  tot.setAttribute('font-size', '14');
+  tot.textContent = '∑ = 122';
+  svg.appendChild(tot);
+
+  // === Activation rendering ===
+  const rX = document.getElementById('r-net-x');
+  const vX = document.getElementById('v-net-x');
+  const togEdges = document.getElementById('net-show-edges');
+  const btnSweep = document.getElementById('net-sweep');
+  let showEdges = true;
+
+  // helper: clamp + map to colour for nodes
+  function nodeFill(act, kind){
+    // kind: 'feat' (bipolar), 'hidden' (unipolar warm), 'out' (channel-tinted)
+    if (kind === 'feat'){
+      // bipolar: blue for negative, maroon for positive
+      const t = Math.max(-1, Math.min(1, act));
+      if (t >= 0) return `rgba(107, 31, 36, ${0.10 + 0.85*t})`;
+      return `rgba(31, 94, 148, ${0.10 + 0.85*(-t)})`;
+    } else if (kind === 'hidden'){
+      // unipolar: ReLU output, scale to roughly [0,1.5] visible range
+      const t = Math.max(0, Math.min(1, act / 1.5));
+      return `rgba(196, 115, 20, ${0.10 + 0.85*t})`;
+    } else {
+      // already coloured by stroke; fill with channel-tinted alpha by activation
+      return null; // handled separately
+    }
+  }
+
+  function update(x){
+    const A = NR.forwardWithActivations(x);
+
+    // input layer values: A.feat
+    for (let i = 0; i < inDim; i++){
+      const v = A.feat[i];
+      nodeEls[0][i].setAttribute('fill', nodeFill(v, 'feat'));
+      nodeEls[0][i].setAttribute('r', 9 + 4 * Math.min(1, Math.abs(v)));
+      valEls[0][i].textContent = (v >= 0 ? ' ' : '') + v.toFixed(2);
+      valEls[0][i].setAttribute('fill', Math.abs(v) > 0.4 ? '#1a1a1a' : '#8a857a');
+    }
+    // h0 values
+    for (let i = 0; i < H; i++){
+      const v = A.h0[i];
+      nodeEls[1][i].setAttribute('fill', nodeFill(v, 'hidden'));
+      nodeEls[1][i].setAttribute('r', 9 + 4 * Math.min(1, v / 1.5));
+      valEls[1][i].textContent = v.toFixed(2);
+      valEls[1][i].setAttribute('fill', v > 0.6 ? '#1a1a1a' : '#8a857a');
+    }
+    // h1 values
+    for (let i = 0; i < H; i++){
+      const v = A.h1[i];
+      nodeEls[2][i].setAttribute('fill', nodeFill(v, 'hidden'));
+      nodeEls[2][i].setAttribute('r', 9 + 4 * Math.min(1, v / 1.5));
+      valEls[2][i].textContent = v.toFixed(2);
+      valEls[2][i].setAttribute('fill', v > 0.6 ? '#1a1a1a' : '#8a857a');
+    }
+    // output values: tint each by its channel colour
+    const outVals = ['R','G','B'].map((_,r)=> A.out[r]);
+    const outMax = Math.max(0.001, Math.max(outVals[0], outVals[1], outVals[2]));
+    for (let r = 0; r < OUT; r++){
+      const v = A.out[r];
+      const intensity = v / 1.2; // outputs are ~0.3-1.0 in this network
+      const channelColors = [[179, 39, 90], [43, 138, 78], [31, 94, 148]];
+      const [cr, cg, cb] = channelColors[r];
+      nodeEls[3][r].setAttribute('fill', `rgba(${cr},${cg},${cb}, ${0.15 + 0.7*Math.min(1,intensity)})`);
+      nodeEls[3][r].setAttribute('r', 11 + 5 * Math.min(1, intensity));
+      valEls[3][r].textContent = v.toFixed(3);
+      valEls[3][r].setAttribute('fill', outColors[r]);
+    }
+
+    // edges: contribution of weight w_ij * source_activation
+    // layer 0→1: W0 (H × IN), source = feat
+    // layer 1→2: W1 (H × H), source = h0
+    // layer 2→3: W2 (3 × H), source = h1
+    if (showEdges){
+      // find global max for normalisation
+      let mag = 0;
+      for (let i = 0; i < H; i++) for (let j = 0; j < inDim; j++) mag = Math.max(mag, Math.abs(NR.W0[i*inDim+j] * A.feat[j]));
+      for (let i = 0; i < H; i++) for (let j = 0; j < H; j++) mag = Math.max(mag, Math.abs(NR.W1[i*H+j] * A.h0[j]));
+      for (let r = 0; r < OUT; r++) for (let j = 0; j < H; j++) mag = Math.max(mag, Math.abs(NR.W2[r*H+j] * A.h1[j]));
+      const SCALE = 4.0 / Math.max(0.05, mag);
+      function setEdge(layer, dst, src, contrib){
+        const e = edgeEls[layer][dst][src];
+        const w = Math.max(0.2, Math.min(3.5, Math.abs(contrib) * SCALE));
+        const op = Math.max(0.08, Math.min(0.95, Math.abs(contrib) * SCALE * 0.4));
+        e.setAttribute('stroke-width', w);
+        e.setAttribute('opacity', op);
+        e.setAttribute('stroke', contrib >= 0 ? '#2b8a4e' : '#b3275a');
+      }
+      for (let i = 0; i < H; i++) for (let j = 0; j < inDim; j++) setEdge(0, i, j, NR.W0[i*inDim+j] * A.feat[j]);
+      for (let i = 0; i < H; i++) for (let j = 0; j < H; j++)     setEdge(1, i, j, NR.W1[i*H+j]     * A.h0[j]);
+      for (let r = 0; r < OUT; r++) for (let j = 0; j < H; j++)   setEdge(2, r, j, NR.W2[r*H+j]     * A.h1[j]);
+    } else {
+      // reset to neutral
+      for (let l = 0; l < edgeEls.length; l++)
+        for (let i = 0; i < edgeEls[l].length; i++)
+          for (let j = 0; j < edgeEls[l][i].length; j++){
+            const e = edgeEls[l][i][j];
+            e.setAttribute('stroke', '#a8a298');
+            e.setAttribute('stroke-width', '0.5');
+            e.setAttribute('opacity', '0.22');
+          }
+    }
+    vX.textContent = x.toFixed(3);
+  }
+
+  rX.addEventListener('input', ()=> update(+rX.value));
+  togEdges.addEventListener('click', ()=>{
+    showEdges = !showEdges;
+    togEdges.classList.toggle('on', showEdges);
+    update(+rX.value);
+  });
+
+  // sweep animation
+  let sweeping = false;
+  let sweepDir = 1;
+  function sweep(){
+    if (!sweeping) return;
+    let v = +rX.value;
+    v += sweepDir * 0.005;
+    if (v >= 1.0){ v = 1.0; sweepDir = -1; }
+    if (v <= 0.0){ v = 0.0; sweepDir = 1; }
+    rX.value = v;
+    update(v);
+    requestAnimationFrame(sweep);
+  }
+  btnSweep.addEventListener('click', ()=>{
+    sweeping = !sweeping;
+    btnSweep.textContent = sweeping ? 'Stop' : 'Sweep cos θ_v';
+    if (sweeping) sweep();
+  });
+
+  update(+rX.value);
+  // start a gentle auto-sweep on load to immediately show life
+  setTimeout(()=>{ if (!sweeping){ sweeping = true; btnSweep.textContent = 'Stop'; sweep(); } }, 1500);
+})();
+</script>
+
+<script>
+/* Fig. 9 — DARTS gates animation */
+(function(){
+  const canvas = document.getElementById('darts-canvas');
+  if (!canvas) return;
+  const rEp = document.getElementById('r-darts-ep');
+  const vEp = document.getElementById('v-darts-ep');
+  const btnPlay = document.getElementById('darts-play');
+  const btnReset = document.getElementById('darts-reset');
+  const Lmax = 6;
+  const Hmax = 16;
+  const TOTAL = 2000;
+  const alphaTraj = [];
+  for (let k = 0; k < Lmax; k++){
+    const start = 0.953;
+    const target = (k <= 1) ? 0.94 : (k === 2 ? 0.74 : 0.05 + Math.random()*0.15);
+    alphaTraj.push({ start, target });
+  }
+  const betaTraj = [];
+  for (let j = 0; j < Hmax; j++){
+    const stay = j < 7;
+    const target = stay ? (0.85 + Math.random()*0.10) : (0.05 + Math.random()*0.18);
+    betaTraj.push({ start: 0.953, target });
+  }
+  function lambdaAt(ep){
+    const f = ep / TOTAL;
+    if (f < 0.20) return 0;
+    if (f < 0.50) return (f - 0.20)/0.30 * 1e-3;
+    return 1e-3;
+  }
+  function gateAt(traj, ep){
+    const f = ep / TOTAL;
+    if (f < 0.20) return traj.start - (traj.start - 0.93)*0.05*Math.sin(f*30);
+    const t = Math.min(1, (f - 0.20)/0.55);
+    return traj.start + (traj.target - traj.start) * (1 - Math.exp(-3*t));
+  }
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const ep = +rEp.value;
+    vEp.textContent = ep|0;
+    const x0 = 60, y0 = 30, pw = w - x0 - 30;
+    const stripH = 90;
+    Plot.label(c, x0, y0-10, 'σ(α_k)  Fourier-octave gates', '#6c6759');
+    Plot.label(c, x0+pw, y0-10, 'epoch →', '#6c6759', 'right');
+    c.strokeStyle = '#2a2a35';
+    c.strokeRect(x0, y0, pw, stripH);
+    c.strokeStyle = '#6c6759';
+    c.setLineDash([3,3]);
+    const yThresh = y0 + stripH * 0.5;
+    c.beginPath(); c.moveTo(x0, yThresh); c.lineTo(x0+pw, yThresh); c.stroke();
+    c.setLineDash([]);
+    Plot.label(c, x0+pw - 4, yThresh - 4, '0.5 threshold', '#6c6759', 'right');
+    const NS_ = 200;
+    const alphaCols = ['#ff5b9b', '#ffae3d', '#9bd96c', '#6ce39a', '#4dc7ff', '#b78bff'];
+    for (let k = 0; k < Lmax; k++){
+      c.strokeStyle = alphaCols[k];
+      c.lineWidth = 1.4;
+      c.beginPath();
+      for (let n = 0; n <= NS_; n++){
+        const t = n/NS_;
+        const epn = t*TOTAL;
+        if (epn > ep) break;
+        const v = gateAt(alphaTraj[k], epn);
+        const px = x0 + t*pw;
+        const py = y0 + stripH - v*stripH;
+        if (n === 0) c.moveTo(px, py); else c.lineTo(px, py);
+      }
+      c.stroke();
+      const t = Math.min(1, ep/TOTAL);
+      const vEnd = gateAt(alphaTraj[k], ep);
+      c.fillStyle = alphaCols[k];
+      c.fillText(`α${k}`, x0 + t*pw + 4, y0 + stripH - vEnd*stripH + 3);
+    }
+    const y2 = y0 + stripH + 60;
+    Plot.label(c, x0, y2-10, 'σ(β_j)  hidden-unit gates', '#6c6759');
+    c.strokeStyle = '#2a2a35';
+    c.strokeRect(x0, y2, pw, stripH);
+    c.strokeStyle = '#6c6759';
+    c.setLineDash([3,3]);
+    c.beginPath(); c.moveTo(x0, y2 + stripH*0.5); c.lineTo(x0+pw, y2 + stripH*0.5); c.stroke();
+    c.setLineDash([]);
+    for (let j = 0; j < Hmax; j++){
+      c.strokeStyle = betaTraj[j].target > 0.5 ? '#9bd96c' : '#5b6071';
+      c.lineWidth = betaTraj[j].target > 0.5 ? 1.2 : 0.8;
+      c.beginPath();
+      for (let n = 0; n <= NS_; n++){
+        const t = n/NS_;
+        const epn = t*TOTAL;
+        if (epn > ep) break;
+        const v = gateAt(betaTraj[j], epn);
+        const px = x0 + t*pw;
+        const py = y2 + stripH - v*stripH;
+        if (n === 0) c.moveTo(px, py); else c.lineTo(px, py);
+      }
+      c.stroke();
+    }
+    c.strokeStyle = '#d9a85a';
+    c.setLineDash([2, 4]);
+    c.beginPath();
+    for (let n = 0; n <= NS_; n++){
+      const t = n/NS_;
+      const lam = lambdaAt(t*TOTAL) / 1e-3;
+      const px = x0 + t*pw;
+      const py = y2 + stripH - lam*stripH*0.95;
+      if (n === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.stroke();
+    c.setLineDash([]);
+    Plot.label(c, x0+pw - 4, y2 + 12, 'λ ramp ×', '#d9a85a', 'right');
+    let aOn = 0, bOn = 0;
+    for (let k = 0; k < Lmax; k++) if (gateAt(alphaTraj[k], ep) > 0.5) aOn++;
+    for (let j = 0; j < Hmax; j++) if (gateAt(betaTraj[j], ep) > 0.5) bOn++;
+    Plot.label(c, x0, h - 14, `live   L = ${aOn}   ·   H = ${bOn}   ·   params ≈ ${(((1+2*aOn)*bOn) + bOn + bOn*bOn + bOn + 3*bOn + 3)|0}`, '#d9a85a');
+  }
+  let playing = false;
+  function play(){
+    if (!playing) return;
+    let v = +rEp.value;
+    v += 8;
+    if (v > TOTAL){ v = TOTAL; playing = false; btnPlay.textContent = 'Play search'; }
+    rEp.value = v;
+    draw();
+    requestAnimationFrame(play);
+  }
+  rEp.addEventListener('input', draw);
+  btnPlay.addEventListener('click', ()=>{
+    if (+rEp.value >= TOTAL) rEp.value = 0;
+    playing = !playing;
+    btnPlay.textContent = playing ? 'Pause' : 'Play search';
+    if (playing) play();
+  });
+  btnReset.addEventListener('click', ()=>{ rEp.value = 0; playing = false; btnPlay.textContent = 'Play search'; draw(); });
+  window.addEventListener('resize', draw);
+  draw();
+  setTimeout(()=>{ if (!playing){ playing = true; btnPlay.textContent = 'Pause'; play(); } }, 1200);
+})();
+</script>
+
+<script>
+/* Fig. 11 — final radiance using the REAL trained network weights
+   ============================================================
+   Weights below are the deployed 122-parameter MLP (L=2, H=7, 3 outputs).
+   These are the weights actually shipped in the GLSL shader, transcribed
+   verbatim from training/train_neural_radiance.py output. Architecture:
+     in=5 → fc0(7) ReLU → fc1(7) ReLU → fc2(3) clamp≥0
+*/
+(function(){
+  const canvas = document.getElementById('final-canvas');
+  if (!canvas) return;
+  const rProbe = document.getElementById('r-probe');
+  const vProbe = document.getElementById('v-probe');
+  const toggles = { ref: true, net: true, res: false };
+  document.querySelectorAll('.specimen[data-fig^="Fig. 11"] .tog').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const k = b.dataset.curve;
+      toggles[k] = !toggles[k];
+      b.classList.toggle('on', toggles[k]);
+      draw();
+    });
+  });
+
+  const L = 2, H = 7, IN = 1 + 2*L; // 5
+
+  // === DEPLOYED WEIGHTS (from train_neural_radiance.py output) ============
+  const NR_W0 = new Float32Array([
+    -6.90640286e-02,  3.98222536e-01, -5.61596334e-01, -1.31516844e-01, -6.86723217e-02,
+     3.39485079e-01,  2.73980528e-01,  4.38222349e-01, -6.60618544e-02,  2.52360165e-01,
+    -1.63779780e-01, -2.16903955e-01, -4.64343160e-01, -5.29453635e-01, -9.74778906e-02,
+     2.21378841e-02,  3.49828094e-01,  5.65975666e-01, -1.50419444e-01, -2.14058474e-01,
+     2.52322823e-01,  5.20892084e-01,  1.34365797e-01,  4.22642261e-01,  9.12939012e-02,
+    -3.48462276e-02,  4.39405918e-01, -3.28216761e-01, -8.54321644e-02,  1.20291330e-01,
+     3.05827595e-02,  5.59671700e-01,  8.31943676e-02,  1.53019518e-01, -3.55811864e-01
+  ]);
+  const NR_B0 = new Float32Array([
+    -3.75430405e-01, -2.38983914e-01,  2.81446576e-01,  2.27803543e-01,  3.08033496e-01,
+    -1.86985526e-02,  1.24888226e-01
+  ]);
+  const NR_W1 = new Float32Array([
+    -1.87403392e-02, -4.33519572e-01, -3.46725434e-01, -2.32418448e-01,  1.91405818e-01,
+     1.45550087e-01, -1.66024595e-01, -2.90624648e-01,  4.11094725e-01,  3.67575228e-01,
+     6.89556152e-02, -2.45289765e-02,  2.53801882e-01, -2.68410951e-01,  1.78010985e-01,
+    -7.58507773e-02, -1.93284899e-01,  5.48654944e-02,  4.08086717e-01,  2.48710722e-01,
+    -1.64491937e-01,  2.99661875e-01,  2.87444502e-01, -1.22027859e-01,  4.20410663e-01,
+     4.16267335e-01,  2.50143856e-01,  2.94222385e-01, -1.73067719e-01,  5.26772797e-01,
+    -3.24547961e-02,  2.59457827e-01,  3.13304901e-01,  4.24165517e-01, -1.95339397e-01,
+    -3.76000166e-01, -4.30930071e-02, -3.19186032e-01, -4.24246669e-01,  2.74957120e-01,
+     2.12016389e-01, -4.56226766e-01, -7.25091770e-02,  3.55032951e-01, -1.72956795e-01,
+     2.59441346e-01,  1.76819429e-01, -2.74908599e-02, -3.06714386e-01
+  ]);
+  const NR_B1 = new Float32Array([
+     1.16258003e-01,  1.75606951e-01,  3.30465376e-01, -8.15637261e-02, -2.87470847e-01,
+     8.83697048e-02,  2.57695973e-01
+  ]);
+  const NR_W2 = new Float32Array([
+    -1.41156435e-01, -1.26453847e-01,  5.83441377e-01,  4.38063741e-01,  1.62314147e-01,
+     6.96972106e-03, -2.43782252e-01,  7.62095824e-02, -6.50905222e-02,  6.61346177e-03,
+     2.18203217e-01,  1.91822216e-01, -1.06748447e-01,  5.04063666e-01, -2.14483306e-01,
+     5.18594265e-01,  4.97712910e-01, -1.10511735e-01,  2.38481313e-01,  5.36436997e-02,
+     1.55780107e-01
+  ]);
+  const NR_B2 = new Float32Array([
+     2.41518065e-01,  3.62542868e-01,  2.05402017e-01
+  ]);
+  // ========================================================================
+
+  function nrEncode(x){
+    const f = new Float32Array(IN);
+    f[0] = x;
+    for (let k = 0; k < L; k++){
+      const a = x * Math.PI * Math.pow(2, k);
+      f[1 + k]     = Math.sin(a);
+      f[1 + L + k] = Math.cos(a);
+    }
+    return f;
+  }
+  function neuralIridescence(x){
+    const f = nrEncode(x);
+    const h0 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = NR_B0[i];
+      for (let j = 0; j < IN; j++) s += NR_W0[i*IN + j] * f[j];
+      h0[i] = Math.max(0, s);
+    }
+    const h1 = new Float32Array(H);
+    for (let i = 0; i < H; i++){
+      let s = NR_B1[i];
+      for (let j = 0; j < H; j++) s += NR_W1[i*H + j] * h0[j];
+      h1[i] = Math.max(0, s);
+    }
+    const out = new Float32Array(3);
+    for (let r = 0; r < 3; r++){
+      let s = NR_B2[r];
+      for (let i = 0; i < H; i++) s += NR_W2[r*H + i] * h1[i];
+      out[r] = Math.max(0, s);
+    }
+    return out;
+  }
+
+  // dense sampling for plotting
+  const N = 240;
+  const xs = []; for (let i = 0; i < N; i++) xs.push(i/(N-1));
+  // JS reference is the toy approximation in §2 — NOT what the network was
+  // trained against (the real shader's biased estimator); plotting it side-by-side
+  // is still useful as an envelope sanity check.
+  const ref = xs.map(x => BRDF.lobes(x).sum);
+  const net = xs.map(x => Array.from(neuralIridescence(x)));
+
+  // bound y-range to the data
+  let yMax = 0;
+  for (let i = 0; i < N; i++){
+    yMax = Math.max(yMax, ref[i][0], ref[i][1], ref[i][2], net[i][0], net[i][1], net[i][2]);
+  }
+  yMax = Math.ceil(yMax * 1.15 * 10) / 10;
+
+  function draw(){
+    const { c, w, h } = Plot.ctx2(canvas);
+    c.clearRect(0,0,w,h);
+    const x0 = 60, y0 = 30, pw = w - 80, ph = h - 90;
+    const ax = Plot.axes(c, x0, y0, pw, ph, [0,1], [0, yMax], {xprec:2, yprec:2});
+    const colors = ['#b3275a', '#2b8a4e', '#1f5e94'];
+    const labels = ['R', 'G', 'B'];
+    if (toggles.ref){
+      for (let ch = 0; ch < 3; ch++){
+        const ys = ref.map(r => r[ch]);
+        c.globalAlpha = 0.45;
+        Plot.curve(c, xs, ys, ax.xMap, ax.yMap, colors[ch], 1.2);
+        c.globalAlpha = 1;
+      }
+    }
+    if (toggles.net){
+      for (let ch = 0; ch < 3; ch++){
+        const ys = net.map(r => r[ch]);
+        Plot.curve(c, xs, ys, ax.xMap, ax.yMap, colors[ch], 2.0);
+      }
+    }
+    if (toggles.res){
+      const offset = yMax * 0.5;
+      for (let ch = 0; ch < 3; ch++){
+        const ys = xs.map((x, i) => offset + (net[i][ch] - ref[i][ch]) * 100);
+        Plot.curve(c, xs, ys, ax.xMap, ax.yMap, colors[ch], 1);
+      }
+      Plot.label(c, x0 + pw - 4, ax.yMap(offset) - 6, `(net − JS-ref) × 100, offset ${offset.toFixed(1)}`, '#8a857a', 'right');
+    }
+    const probe = +rProbe.value;
+    vProbe.textContent = probe.toFixed(3);
+    const px = ax.xMap(probe);
+    c.strokeStyle = '#6b1f24';
+    c.setLineDash([4, 4]);
+    c.beginPath(); c.moveTo(px, y0); c.lineTo(px, y0+ph); c.stroke();
+    c.setLineDash([]);
+    const refV = BRDF.lobes(probe).sum;
+    const netV = neuralIridescence(probe);
+    for (let ch = 0; ch < 3; ch++){
+      const ry = ax.yMap(Math.min(yMax, refV[ch]));
+      const ny = ax.yMap(Math.min(yMax, netV[ch]));
+      if (toggles.ref){
+        c.fillStyle = colors[ch];
+        c.globalAlpha = 0.45;
+        c.beginPath(); c.arc(px, ry, 3, 0, 2*Math.PI); c.fill();
+        c.globalAlpha = 1;
+      }
+      if (toggles.net){
+        c.fillStyle = colors[ch];
+        c.beginPath(); c.arc(px, ny, 4, 0, 2*Math.PI); c.fill();
+      }
+    }
+    let by = y0 + 14;
+    c.font = '11px JetBrains Mono, monospace';
+    c.fillStyle = '#6b1f24';
+    c.textAlign = 'right';
+    c.fillText(`probe ${probe.toFixed(3)}`, x0+pw-2, by); by+=14;
+    c.fillStyle = '#555049';
+    c.fillText('net  (deployed weights)', x0+pw-2, by); by+=12;
+    for (let ch = 0; ch < 3; ch++){
+      c.fillStyle = colors[ch];
+      c.fillText(`${labels[ch]}  ${netV[ch].toFixed(3)}`, x0+pw-2, by);
+      by += 12;
+    }
+    c.textAlign = 'left';
+    Plot.label(c, x0, y0-10, 'L_o(cos θ_v) — RGB radiance, deployed network', '#8a857a');
+    Plot.label(c, x0+pw, y0-10, 'cos θ_v →', '#8a857a', 'right');
+    Plot.label(c, x0+12, y0+ph-12, '— bold: deployed net   – – : JS toy reference (§2 envelope)', '#8a857a');
+  }
+
+  rProbe.addEventListener('input', draw);
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+
+</body>
+</html>
