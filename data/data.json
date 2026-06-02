@@ -2,7 +2,7 @@
     "data":
     [
         {
-            "title":"Mipmap based mini-batching for neural network training",
+            "title":"Free Mini-Batch Gradients from Mipmap Reduction for neural network training",
             "date":"2026-05-07",
             "type":"Blog post",
             "people":"Maximilien Nowak",
