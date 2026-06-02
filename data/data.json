@@ -2,6 +2,24 @@
     "data":
     [
         {
+            "title":"Mipmap based mini-batching for neural network training",
+            "date":"2026-05-07",
+            "type":"Blog post",
+            "people":"Maximilien Nowak",
+            "image":"fitted.png",
+            "abstract":"New technique for minibatch reduction using mipmap hardware downsampling.",
+            "isPaper":false,
+            "paperLink":"",
+            "gotCode":false,
+            "codeLink":"github.com/Cewein/MILA",
+            "gotDemo":true,
+            "demoLink":"https://www.shadertoy.com/view/f3l3WM",
+            "gotWebpage":true,
+            "pageLink":"blog/mipmap-gradient-reduction.md.html",
+            "gotDataset":false,
+            "dataLink":""
+        },
+        {
             "title":"Mesh Aware pruning for gaussian splatting",
             "date":"2025-11-13",
             "type":"Blog post",
